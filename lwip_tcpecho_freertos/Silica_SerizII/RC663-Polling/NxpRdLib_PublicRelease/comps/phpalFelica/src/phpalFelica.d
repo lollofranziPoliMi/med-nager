@@ -1,0 +1,20 @@
+RC663-Polling/NxpRdLib_PublicRelease/comps/phpalFelica/src/phpalFelica.d: \
+ ../RC663-Polling/NxpRdLib_PublicRelease/comps/phpalFelica/src/phpalFelica.c \
+ C:\nxp\LPCOpen_platform_v0.51\applications\lpc18xx_43xx\examples\SerizII_lpc\lwip_tcpecho_freertos\RC663-Polling\NxpRdLib_PublicRelease\intfs/phpalFelica.h \
+ C:\nxp\LPCOpen_platform_v0.51\applications\lpc18xx_43xx\examples\SerizII_lpc\lwip_tcpecho_freertos\RC663-Polling\NxpRdLib_PublicRelease\types/ph_Status.h \
+ C:\nxp\LPCOpen_platform_v0.51\applications\lpc18xx_43xx\examples\SerizII_lpc\lwip_tcpecho_freertos\RC663-Polling\NxpRdLib_PublicRelease\types/ph_NxpBuild.h \
+ C:\nxp\LPCOpen_platform_v0.51\applications\lpc18xx_43xx\examples\SerizII_lpc\lwip_tcpecho_freertos\RC663-Polling\NxpRdLib_PublicRelease\types/ph_TypeDefs.h \
+ C:\nxp\LPCOpen_platform_v0.51\applications\lpc18xx_43xx\examples\SerizII_lpc\lwip_tcpecho_freertos\RC663-Polling\NxpRdLib_PublicRelease\types/ph_RefDefs.h \
+ ../RC663-Polling/NxpRdLib_PublicRelease/comps/phpalFelica/src/Sw/phpalFelica_Sw.h
+
+C:\nxp\LPCOpen_platform_v0.51\applications\lpc18xx_43xx\examples\SerizII_lpc\lwip_tcpecho_freertos\RC663-Polling\NxpRdLib_PublicRelease\intfs/phpalFelica.h:
+
+C:\nxp\LPCOpen_platform_v0.51\applications\lpc18xx_43xx\examples\SerizII_lpc\lwip_tcpecho_freertos\RC663-Polling\NxpRdLib_PublicRelease\types/ph_Status.h:
+
+C:\nxp\LPCOpen_platform_v0.51\applications\lpc18xx_43xx\examples\SerizII_lpc\lwip_tcpecho_freertos\RC663-Polling\NxpRdLib_PublicRelease\types/ph_NxpBuild.h:
+
+C:\nxp\LPCOpen_platform_v0.51\applications\lpc18xx_43xx\examples\SerizII_lpc\lwip_tcpecho_freertos\RC663-Polling\NxpRdLib_PublicRelease\types/ph_TypeDefs.h:
+
+C:\nxp\LPCOpen_platform_v0.51\applications\lpc18xx_43xx\examples\SerizII_lpc\lwip_tcpecho_freertos\RC663-Polling\NxpRdLib_PublicRelease\types/ph_RefDefs.h:
+
+../RC663-Polling/NxpRdLib_PublicRelease/comps/phpalFelica/src/Sw/phpalFelica_Sw.h:
