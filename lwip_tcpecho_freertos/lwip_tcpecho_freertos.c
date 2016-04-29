@@ -644,6 +644,7 @@ int main(void)
 	FullTime.time[RTC_TIMETYPE_DAYOFYEAR]	= 102;
 	FullTime.time[RTC_TIMETYPE_MONTH]   	= 04;
 	//FullTime.time[RTC_TIMETYPE_YEAR]    	= 2016;
+	//RIGA AGGIUNTA DA SITO
 
 	Chip_RTC_SetFullTime(&FullTime);
 
