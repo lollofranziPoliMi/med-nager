@@ -452,8 +452,8 @@ void RTC_IRQHandler(void)
 		Board_LED_Set(0, On0);
 	}
 
-	/* display timestamp every 5 seconds in the background */
-//	sec = Chip_RTC_GetTime(RTC_TIMETYPE_SECOND);
+	/* display timestamp every second */
+	sec = Chip_RTC_GetTime(RTC_TIMETYPE_SECOND);
 //	if (!(sec % 5)) {
 //		fIntervalReached = 1;	/* set flag for background */
 //		if (fAlarmTimeMatched) {
