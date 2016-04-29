@@ -633,7 +633,11 @@ int main(void)
 {
 	prvSetupHardware();
 
+	//RIGA INUTILE
 	Chip_RTC_Init();
+
+	//ALTRA RIGA INUTILE
+	//ALTRA RIGA INUTILE
 
 	/*Set current time for RTC 8:59:20PM, 2016-04-11 MONDAY 102*/
 	FullTime.time[RTC_TIMETYPE_SECOND]  	= 40;
