@@ -641,7 +641,7 @@ int main(void)
 	FullTime.time[RTC_TIMETYPE_HOUR]    	= 8;
 	FullTime.time[RTC_TIMETYPE_DAYOFMONTH] 	= 11;
 	FullTime.time[RTC_TIMETYPE_DAYOFWEEK]	= 1;
-	FullTime.time[RTC_TIMETYPE_DAYOFYEAR]	= 102;
+	//FullTime.time[RTC_TIMETYPE_DAYOFYEAR]	= 102;
 	FullTime.time[RTC_TIMETYPE_MONTH]   	= 04;
 	FullTime.time[RTC_TIMETYPE_YEAR]    	= 2016;
 
