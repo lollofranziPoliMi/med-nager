@@ -635,15 +635,15 @@ int main(void)
 
 	Chip_RTC_Init();
 
-//	/*Set current time for RTC 8:59:20PM, 2016-04-11 MONDAY 102*/
-//	FullTime.time[RTC_TIMETYPE_SECOND]  	= 40;
-//	FullTime.time[RTC_TIMETYPE_MINUTE]  	= 59;
-//	FullTime.time[RTC_TIMETYPE_HOUR]    	= 8;
-//	FullTime.time[RTC_TIMETYPE_DAYOFMONTH] 	= 11;
-//	FullTime.time[RTC_TIMETYPE_DAYOFWEEK]	= 1;
-//	FullTime.time[RTC_TIMETYPE_DAYOFYEAR]	= 102;
-//	FullTime.time[RTC_TIMETYPE_MONTH]   	= 04;
-//	FullTime.time[RTC_TIMETYPE_YEAR]    	= 2016;
+	/*Set current time for RTC 8:59:20PM, 2016-04-11 MONDAY 102*/
+	FullTime.time[RTC_TIMETYPE_SECOND]  	= 40;
+	FullTime.time[RTC_TIMETYPE_MINUTE]  	= 59;
+	FullTime.time[RTC_TIMETYPE_HOUR]    	= 8;
+	FullTime.time[RTC_TIMETYPE_DAYOFMONTH] 	= 11;
+	FullTime.time[RTC_TIMETYPE_DAYOFWEEK]	= 1;
+	FullTime.time[RTC_TIMETYPE_DAYOFYEAR]	= 102;
+	FullTime.time[RTC_TIMETYPE_MONTH]   	= 04;
+	FullTime.time[RTC_TIMETYPE_YEAR]    	= 2016;
 
 	Chip_RTC_SetFullTime(&FullTime);
 
