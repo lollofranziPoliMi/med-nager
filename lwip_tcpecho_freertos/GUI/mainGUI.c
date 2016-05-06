@@ -75,7 +75,7 @@ typedef struct{
 	uint8_t info[4];
 	struct Nodo_t *prox;
 } Nodo_t;
-extern Nodo_t *lista;
+extern Nodo_t *lista, *listaScheduled;
 extern IP_RTC_TIME_T FullTime;
 //extern Nodo {
 //	uint8_t info[4];
@@ -90,7 +90,7 @@ typedef struct {
 	int secA;
 	int minA;
 	int oraA;
-	int scaduta;
+	int giorniAllaScadenza;//int scaduta;
 	int avvisare;
 	int importanza;
 	int presa;
@@ -100,7 +100,7 @@ extern	medicinale medic;
 extern medicinale *ptrMedic;
 //extern uint8_t numeroRigheMax;
 //extern uint8_t m[numeroRigheMax][100];
-#define maxR 5
+#define maxR 100
 #define maxC 100
 extern uint8_t l_tabellaMedicine[maxR][maxC];
 
@@ -228,6 +228,9 @@ void vCardDisplay( void )
 #define X_M4  40
 #define X_663  135
 
+int modifica=0, statoDisplay=0, statoDisplayP=0;
+
+
 int confronta_tag(uint8_t inf[4], uint8_t tUID[4]){
 	int u = 0;
 	if (inf[0]==tUID[0] && inf[1]==tUID[1] && inf[2]==tUID[2] && inf[3]==tUID[3]) {
@@ -247,7 +250,7 @@ void assegna_medicinale(medicinale *dest, medicinale *sur){
 	dest->secA = sur->secA;
 	dest->minA = sur->minA;
 	dest->oraA = sur->oraA;
-	dest->scaduta = sur->scaduta;
+	dest->giorniAllaScadenza = sur->giorniAllaScadenza;
 	dest->avvisare = sur->avvisare;
 	dest->importanza = sur->importanza;
 	dest->presa = sur->presa;
@@ -311,48 +314,15 @@ void vCardReset( void ){
   WM_SetDesktopColor(GUI_BLACK);
   GUI_SetBkColor(GUI_BLACK);
   GUI_SetColor(GUI_GREEN);
-  GUI_Clear();
+  //GUI_Clear();
   GUI_SetFont(&GUI_Font32B_ASCII);
   GUI_DispStringAt( "NESSUNA", 120-7*10/2, 50);
   GUI_DispStringAt( "MEDICINA", 120-7*10/2, 80);
   GUI_DispStringAt( "PRESENTE", 120-7*10/2, 110);
-//  GUI_SetColor( (GUI_COLOR)0x003f3f3f );
-//  GUI_FillRect( 0, 214, 319, 239 );
-//  GUI_SetBkColor((GUI_COLOR)0x003f3f3f);
-//  GUI_SetColor(GUI_BLUE);
-//  GUI_SetFont(&GUI_Font24B_ASCII);
-//  GUI_DispStringAt( "Waiting for a card", 80, 215);
+
   showTime(NULL, NULL, NULL, NULL);
 
-/*  WM_SetDesktopColor(GUI_BLACK);
-  GUI_SetBkColor(GUI_BLACK);
-  GUI_SetColor(GUI_GREEN);
-  GUI_Clear();
 
-  GUI_SetFont(&GUI_Font32B_ASCII);
-  GUI_DispStringAt( "SERIZ II", 110, 0);
-  GUI_SetFont(&GUI_Font20B_ASCII);
-  GUI_DispStringAt( "LPC4350 ( M4 ) based", 20, X_M4);
-  GUI_SetFont(&GUI_Font16B_ASCII);
-  GUI_DispStringAt( "- M4-core 204MHz max", 40, X_M4+24);
-  GUI_DispStringAt( "- M0-code 204MHz max", 40, X_M4+24+16);
-  GUI_DispStringAt( "- 264kB on-chip SRAM", 40, X_M4+24+16+16);
-  GUI_SetBkColor((GUI_COLOR)0x00003f00);
-  GUI_DispStringAt( "- Running over SPIFI ", 40, X_M4+24+16+16+16);
-  GUI_SetBkColor(GUI_BLACK);
-  GUI_SetFont(&GUI_Font20B_ASCII);
-  GUI_DispStringAt( "CLRC663 RfID reader", 20, X_663);
-  GUI_SetFont(&GUI_Font16B_ASCII);
-  GUI_DispStringAt( "- ISO1443A /B  ISO15693  ISO1800-3", 40, X_663+24);
-  GUI_DispStringAt( "- NFC capable", 40, X_663+24+16);
-  GUI_DispStringAt( "- low power", 40, X_663+24+16+16);
-
-  GUI_SetColor( (GUI_COLOR)0x003f3f3f );
-  GUI_FillRect( 0, 214, 319, 239 );
-  GUI_SetBkColor((GUI_COLOR)0x003f3f3f);
-  GUI_SetColor(GUI_BLUE);
-  GUI_SetFont(&GUI_Font24B_ASCII);
-  GUI_DispStringAt( "Waiting vCARD", 80, 215);*/
 
   empty = 0;
 }
@@ -408,47 +378,16 @@ void showCardUIDList( char *cardType, Nodo_t *lista, uint8_t *nCardDetected, uin
 
   char msg[35];
 
-/*  if( empty == 1 || empty == 2 ) {	// to trovato almeno una vCard
-    return;
-  }*/
-
-/*
-  if (nCardDetected==nCardPrevious){
-	  return;
-  }
-*/
   WM_SetDesktopColor(GUI_BLACK);
   GUI_SetBkColor(GUI_BLACK);
   GUI_SetColor(GUI_GREEN);
-  GUI_Clear();
 
-//  GUI_SetFont(&GUI_Font32B_ASCII);
-//  GUI_DispStringAt( cardType, 120-strlen(cardType)*10/2, 20);
   if( lista != NULL )
   {
 	  Nodo_t *testa=lista;
-//	  int i=0;
-//	  for (i=0;i<nCardDetected;i++){
-//		  if (lista->info[0]==0x6b && lista->info[1]==0xec && lista->info[2]==0x1d && lista->info[3]==0x9f){
-//			 sprintf( msg, "TACHI");
-//			 GUI_DispStringAt( msg, 0, 20*i+20);
-//
-//		  } /*else {
-//			  sprintf( msg, "BBBBB%c ",aa);
-//			  GUI_DispStringAt( msg, 0, 20*i+20);
-//		  }*/
-//		  if (lista->info[0]==0x9b && lista->info[1]==0x83 && lista->info[2]==0x1e && lista->info[3]==0x9f){
-//		  			 sprintf( msg, "SARI");
-//		  			 GUI_DispStringAt( msg, 0, 20*i+20);
-//		  }
-////	    sprintf( msg, "UID %02X : %02X%02X%02X%02X", i+1, lista->info[0], lista->info[1], lista->info[2], lista->info[3] );
-////	    GUI_DispStringAt( msg, 0, 20*i+20);
-//	    lista=lista->prox;
-//	  }
-//	  lista = testa;
 
 	  int i=0,j=1;
-	  sprintf( msg, "ELENCO MEDICINE:");
+	  sprintf( msg, "ELENCO MEDICINE sched:");
 	  GUI_DispStringAt( msg, 0, 20);
 	  while (lista != NULL ){
 		  int k=0,c=0;
@@ -513,19 +452,11 @@ void showCardUIDList( char *cardType, Nodo_t *lista, uint8_t *nCardDetected, uin
   empty = 1;
 }
 
-void showTime( char *cardType,  uint8_t *bUidPresent, uint8_t *nCardDetected, uint8_t *nCardPrevious)
+extern int fIntervalReached;
+extern uint32_t previousSec;
+void showTime( /*char *cardType,  uint8_t *bUidPresent, uint8_t *nCardDetected, uint8_t *nCardPrevious*/)
 {
 	  char msg[100];
-
-/*
-	  if (nCardDetected==nCardPrevious){
-		  return;
-	  }
-*/
-//	  WM_SetDesktopColor(GUI_BLACK);
-//	  GUI_SetBkColor(GUI_BLACK);
-//	  GUI_SetColor(GUI_GREEN);
-//	  GUI_Clear();
 
 	  Chip_RTC_GetFullTime(&FullTime);
 	    sprintf( msg, "%.2d:%.2d:%.2d %.2d/%.2d/%.4d\r\n", FullTime.time[2],
@@ -534,70 +465,67 @@ void showTime( char *cardType,  uint8_t *bUidPresent, uint8_t *nCardDetected, ui
 	    		FullTime.time[3],
 	    		FullTime.time[6],
 	    		FullTime.time[7]);
-	//	    GUI_DispStringAt( msg, 0, 100);
 
-		    GUI_FillRect( 0, 214, 317, 214 );
-		    //GUI_SetBkColor((GUI_COLOR)0x003f3f3f);
-		    GUI_SetColor(GUI_GREEN);
-		    GUI_SetFont(&GUI_Font24B_ASCII);
-		    GUI_DispStringAt( msg, 60, 215);
+	    GUI_SetColor(GUI_WHITE);
+	    GUI_FillRect( 0, 214, 317, 214 );
+	    GUI_SetFont(&GUI_Font24B_ASCII);
+	    GUI_DispStringAt( msg, 60, 215);
+	    GUI_SetColor(GUI_GREEN);
 
-    /*RETTANGOLO IN BASSO*/
-//	  GUI_SetColor( (GUI_COLOR)0x003f3f3f );
-//	  GUI_FillRect( 0, 214, 319, 239 );
-//	  GUI_SetBkColor((GUI_COLOR)0x003f3f3f);
-//	  GUI_SetColor(GUI_RED);
-//	  GUI_SetFont(&GUI_Font24B_ASCII);
-//	  GUI_DispStringAt( "Reading Card", 80, 215);
-
-	  empty = 1;
 }
 
 void showTimeAlarm( uint8_t *bUidPresent, uint8_t *nCardDetected, uint8_t *nCardPrevious)
 {
 	  char msg[100];
 
+	  statoDisplay=6;
 	  Chip_RTC_GetFullTime(&FullTime);
-//	  if (/*(nCardDetected==nCardPrevious) ||*/ (FullTime.time[RTC_TIMETYPE_SECOND]%5)!=0){
-//		  return;
-//	  }
+	  if (statoDisplayP!=6) {
+		  GUI_Clear();
+	  }
 
-//	  WM_SetDesktopColor(GUI_BLACK);
-//	  GUI_SetBkColor(GUI_BLACK);
-//	  GUI_SetColor(GUI_GREEN);
-//	  GUI_Clear();
-
-		    sprintf( msg, "Assumere: %s", ptrMedic->nome);//TACHIPIRINA 1000");
-			    GUI_DispStringAt( msg, 0, 120);
+	  int ii=0;
+		int k=0,c=0,rimanenti=0,soglia=0,dose=0;
+		for (k=0; k<maxR; k++) {
+			uint8_t tempTag[4];
+			for (c=0;c<4;c++){
+				tempTag[c] = l_tabellaMedicine[k][c];
+			}
+			if (confronta_tag(ptrMedic->tag,tempTag)==1) {
+				rimanenti = l_tabellaMedicine[k][62];
+				soglia = l_tabellaMedicine[k][64];
+				dose = l_tabellaMedicine[k][55];
+			}
+		}
+		    sprintf( msg, "Assumere: %s", ptrMedic->nome);
+			    GUI_DispStringAt( msg, 0, 20);
+			    sprintf( msg, "Dose: %d pastiglie", dose/4);
+				GUI_DispStringAt( msg, 0, 40+20*ii);
+				ii++;
+			    if (ptrMedic->giorniAllaScadenza<30) {
+			    	GUI_SetColor(GUI_YELLOW);
+				    sprintf( msg, "Scade entro un mese!");
+					GUI_DispStringAt( msg, 0, 40+20*ii);
+			    	GUI_SetColor(GUI_GREEN);
+			    	ii++;
+			    }
 			    if (ptrMedic->avvisare) {
 			    	GUI_SetColor(GUI_ORANGE);
 				    sprintf( msg, "Stai per esaurire il medicinale");
-					GUI_DispStringAt( msg, 0, 140);
+					GUI_DispStringAt( msg, 0, 40+20*ii);
 			    	GUI_SetColor(GUI_GREEN);
-
+			    	ii++;
 			    }
-			sprintf( msg, "%.2d:%.2d:%.2d %.2d/%.2d/%.4d\r\n", FullTime.time[2],
-	    		FullTime.time[1],
-	    		FullTime.time[0],
-	    		FullTime.time[3],
-	    		FullTime.time[6],
-	    		FullTime.time[7]);
-//		    GUI_DispStringAt( msg, 0, 100);
+		    	GUI_SetColor(GUI_GREEN);
+			    sprintf( msg, "Rimangono %d pastiglie", rimanenti);
+				GUI_DispStringAt( msg, 0, 40+20*ii);
+				ii++;
+			    sprintf( msg, "Soglia di avviso impostata: %d", soglia);
+				GUI_DispStringAt( msg, 0, 40+20*ii);
 
-		    GUI_FillRect( 0, 214, 317, 214 );
-		    //GUI_SetBkColor((GUI_COLOR)0x003f3f3f);
-		    GUI_SetColor(GUI_GREEN);
-		    GUI_SetFont(&GUI_Font24B_ASCII);
-		    GUI_DispStringAt( msg, 60, 215);
-	/*RETTANGOLO IN BASSO*/
-//	  GUI_SetColor( (GUI_COLOR)0x003f3f3f );
-//	  GUI_FillRect( 0, 214, 319, 239 );
-//	  GUI_SetBkColor((GUI_COLOR)0x003f3f3f);
-//	  GUI_SetColor(GUI_RED);
-//	  GUI_SetFont(&GUI_Font24B_ASCII);
-//	  GUI_DispStringAt( "Reading Card", 80, 215);
+			    showTime();
 
-	  //vTaskDelay(5000);
+			    statoDisplayP=statoDisplay;
 	  empty = 1;
 }
 
@@ -605,7 +533,7 @@ void showTimeAlarm( uint8_t *bUidPresent, uint8_t *nCardDetected, uint8_t *nCard
  * LCD display thread
  */
 extern char  Card_Type[40], vCardPresent;
-extern uint8_t bUid[10], bUidPresent[100], nCardDetected, nCardPrevious;
+extern uint8_t bUid[10], bUidPresent[100], nCardDetected, nCardPrevious, nCardTot;
 extern xSemaphoreHandle xSemaDataAvail, xSemaGUIend;
 extern int fAlarmTimeMatched;
 extern uint8_t tagRimosso[4], tagAggiunto[4];
@@ -641,6 +569,330 @@ portTASK_FUNCTION(vLcdTask, pvParameters)
 }
 
 
+portTASK_FUNCTION(vLcdTaskOpenDay, pvParameters)
+{
+
+	lcdInit( (uint32_t)&_aVRAM[0]);
+	GUI_Init();
+	WM_SetDesktopColor(GUI_GREEN);
+	WM_SetCreateFlags(WM_CF_MEMDEV);
+	char messaggio[50],msgg[3][70];
+	statoDisplay=1;
+	while ( 1 ) {
+		while( xSemaphoreTake(xSemaDataAvail, portMAX_DELAY ) != pdTRUE );
+
+		if (fIntervalReached==1) {
+			GUI_ClearRect(0,214,317,249);
+			showTime();
+			fIntervalReached=0;
+		}
+
+//CALCOLA STATO DISPLAY SITUAZIONE NORMALE
+		if (!fAlarmTimeMatched) {
+			Nodo_t *temp1 = lista;
+			Nodo_t *temp2 = listaScheduled;
+			int j=0;
+			statoDisplay=1;
+			while (temp2!=NULL) {
+				if(confronta_tag(temp1->info,temp2->info)==1) {
+					temp1=lista;
+					temp2=temp2->prox;
+				} else {
+					if (temp1->prox!=NULL) {
+						temp1=temp1->prox;
+					} else {
+						//temp2 non è presente nella scatola
+							statoDisplay=2;
+							int k=0,c=0;
+							for (k=0; k<maxR; k++) {
+								uint8_t tempTag[4];
+								for (c=0;c<4;c++){
+									tempTag[c] = l_tabellaMedicine[k][c];
+								}
+								if (confronta_tag(temp2->info,tempTag)==1) {
+									for (c=0;c<35;c++){
+										msgg[j][c] = l_tabellaMedicine[k][c+4];
+									}
+									j++;
+
+									temp1=lista;
+									temp2=temp2->prox;
+								}
+							}
+					}//FINE else //temp2 non è presente nella scatola
+				}
+			}
+
+			if (statoDisplay==1) {
+				if (statoDisplayP!=1){
+					GUI_Clear();
+				}
+				GUI_DispStringAt( "Nessuna medicina", 120-7*10/2, 50);
+				GUI_DispStringAt( "da assumere", 120-7*10/2, 100);
+			showTime();
+			}
+
+			if (statoDisplay==2) {
+				if (statoDisplayP!=2){
+					GUI_Clear();
+				}
+				GUI_Clear();
+				int c=0;
+				GUI_DispStringAt( "Nella scatola manca:", 80, 20);
+				for (c=0;c<j;c++){
+					GUI_DispStringAt( msgg[c], 80, 20*c+40);
+				}
+				showTime();
+			}
+			statoDisplayP=statoDisplay;
+			vTaskDelay(300);
+		}//FINE if !fAlarmTimeMatched
+		else { //fAlarmTimeMatched
+			showTimeAlarm(bUidPresent,nCardDetected,nCardPrevious);
+
+
+
+			if ((nCardDetected<nCardPrevious) /*&& (tag)*/) {
+				//GUI_Clear();
+				if (tagRimosso[0] == ptrMedic->tag[0] && tagRimosso[1] == ptrMedic->tag[1] && tagRimosso[2] == ptrMedic->tag[2] && tagRimosso[3] == ptrMedic->tag[3] ){ //tag corretto
+					GUI_SetColor(GUI_GREEN);
+					GUI_Clear();
+					sprintf( messaggio, "Medicina Corretta!");
+					GUI_DispStringAt( messaggio, 40, 100);
+					vTaskDelay(5000);
+					if (nCardDetected<nCardTot) {
+						GUI_DispStringAt( "Riposiziona la medicina", 0, 100);
+						vTaskDelay(1000);
+					}
+					fAlarmTimeMatched=0;
+					modifica=1;
+					//MODIFICARE DOSI RIMANENTI
+					int cc = 0;
+					for (cc=0; cc<maxR; cc++) {
+						if ((ptrMedic->tag[1] == l_tabellaMedicine[cc][1]) && (ptrMedic->tag[2] == l_tabellaMedicine[cc][2]) && (ptrMedic->tag[3] == l_tabellaMedicine[cc][3]) && (ptrMedic->tag[4] == l_tabellaMedicine[cc][4])) {
+							uint8_t dose = l_tabellaMedicine[cc][55], rimasteInt = l_tabellaMedicine[cc][62], rimasteFraz = l_tabellaMedicine[cc][63];
+							uint16_t rimaste = (rimasteInt << 2) | rimasteFraz; //0b11
+							rimaste = rimaste-(uint16_t)dose; //SOLO QUANDO LA ASSUMO!
+							uint8_t temp = rimaste;
+							temp = temp&0b00000011;
+							rimasteFraz = temp ;
+							rimaste >>= 2;
+							rimasteInt = (uint8_t) rimaste;
+
+							l_tabellaMedicine[cc][62] = rimasteInt;
+							l_tabellaMedicine[cc][63] = rimasteFraz;
+						}
+
+					}
+					ptrMedic = ptrMedic->next;
+
+					IP_RTC_TIME_T oraAllarme;
+					oraAllarme.time[RTC_TIMETYPE_HOUR]  = ptrMedic->oraA;
+					oraAllarme.time[RTC_TIMETYPE_MINUTE]  = ptrMedic->minA;
+					oraAllarme.time[RTC_TIMETYPE_SECOND]  = ptrMedic->secA;
+
+					if (orarioDopoOrario(FullTime,oraAllarme)) {
+						fAlarmTimeMatched = 1;
+					}
+					else{
+						FullTime.time[RTC_TIMETYPE_HOUR] = oraAllarme.time[RTC_TIMETYPE_HOUR];
+						FullTime.time[RTC_TIMETYPE_MINUTE] = oraAllarme.time[RTC_TIMETYPE_MINUTE];
+						FullTime.time[RTC_TIMETYPE_SECOND] = oraAllarme.time[RTC_TIMETYPE_SECOND];
+						Chip_RTC_SetFullAlarmTime(&FullTime);
+					}
+
+				} else{
+					//mostra che hai tolto il tag ERRATO!
+					GUI_SetColor(GUI_RED);
+					GUI_Clear();
+					sprintf( messaggio, "Medicina ERRATA!");
+					GUI_DispStringAt( messaggio, 40, 100);
+					showTimeAlarm(bUidPresent, nCardDetected, nCardPrevious);
+					vTaskDelay(2000);
+					modifica=1;
+				}
+			}
+
+
+		}
+		xSemaphoreGive( xSemaGUIend );
+	}
+}
+//    	if (fAlarmTimeMatched){
+//    		if (nCardDetected==nCardPrevious) {/*DA METTERE IL TAG ASSOCIATO ALL'ALLARME*/
+//    			showTimeAlarm(bUidPresent, nCardDetected, nCardPrevious );
+//    			//fAlarmTimeMatched=0;
+//    			//vTaskDelay(500);
+//    		}else{
+//    			if ((nCardDetected<nCardPrevious) /*&& (tag)*/) {
+//    				//GUI_Clear();
+//        			if (tagRimosso[0] == ptrMedic->tag[0] && tagRimosso[1] == ptrMedic->tag[1] && tagRimosso[2] == ptrMedic->tag[2] && tagRimosso[3] == ptrMedic->tag[3] ){ //tag corretto
+//    					//mostra l''ok e togli alarm (fAlarmTimeMatched = 0;)
+////                				while (tagAggiunto!=ptrMedic->tag) {
+////                					//TEMPORIZZARE IL TUTTO!
+////                				}
+//    					GUI_SetColor(GUI_GREEN);
+//        				sprintf( messaggio, "Medicina Corretta!");
+//        				GUI_DispStringAt( messaggio, 0, 150);
+//        				vTaskDelay(5000);
+//        				if (nCardDetected<nCardTot) {
+//        					GUI_DispStringAt( "Riposiziona la medicina", 0, 150);
+//        				}
+//        				fAlarmTimeMatched=0;
+//        				modifica=1;
+//        				//MODIFICARE DOSI RIMANENTI
+//        				int cc = 0;
+//        				for (cc=0; cc<maxR; cc++) {
+//            				if ((ptrMedic->tag[1] == l_tabellaMedicine[cc][1]) && (ptrMedic->tag[2] == l_tabellaMedicine[cc][2]) && (ptrMedic->tag[3] == l_tabellaMedicine[cc][3]) && (ptrMedic->tag[4] == l_tabellaMedicine[cc][4])) {
+//            					uint8_t dose = l_tabellaMedicine[cc][55], rimasteInt = l_tabellaMedicine[cc][62], rimasteFraz = l_tabellaMedicine[cc][63];
+//            					uint16_t rimaste = (rimasteInt << 2) | rimasteFraz; //0b11
+//            					rimaste = rimaste-(uint16_t)dose; //SOLO QUANDO LA ASSUMO!
+//            					uint8_t temp = rimaste;
+//            					temp = temp&0b00000011;
+//            					rimasteFraz = temp ;
+//            					rimaste >>= 2;
+//            					rimasteInt = (uint8_t) rimaste;
+//
+//            					l_tabellaMedicine[cc][62] = rimasteInt;
+//            					l_tabellaMedicine[cc][63] = rimasteFraz;
+//            				}
+//
+//        				}
+//        				ptrMedic = ptrMedic->next;
+//
+//        				IP_RTC_TIME_T oraAllarme;
+//						oraAllarme.time[RTC_TIMETYPE_HOUR]  = ptrMedic->oraA;
+//						oraAllarme.time[RTC_TIMETYPE_MINUTE]  = ptrMedic->minA;
+//						oraAllarme.time[RTC_TIMETYPE_SECOND]  = ptrMedic->secA;
+//
+//        				if (orarioDopoOrario(FullTime,oraAllarme)) {
+//        					fAlarmTimeMatched = 1;
+//							}
+//        				else{
+//        					FullTime.time[RTC_TIMETYPE_HOUR] = oraAllarme.time[RTC_TIMETYPE_HOUR];
+//        					FullTime.time[RTC_TIMETYPE_MINUTE] = oraAllarme.time[RTC_TIMETYPE_MINUTE];
+//        					FullTime.time[RTC_TIMETYPE_SECOND] = oraAllarme.time[RTC_TIMETYPE_SECOND];
+//							Chip_RTC_SetFullAlarmTime(&FullTime);
+//        				}
+//
+//    				} else{
+//    					//mostra che hai tolto il tag ERRATO!
+//    					GUI_SetColor(GUI_RED);
+//    					sprintf( messaggio, "Medicina ERRATA!");
+//    					GUI_DispStringAt( messaggio, 0, 150);
+//    					showTimeAlarm(bUidPresent, nCardDetected, nCardPrevious);
+//    					vTaskDelay(2000);
+//    					modifica=1;
+//    				}
+//
+//    			}else {
+//    				vTaskDelay(20);
+//    			}
+//
+//    		}
+//    	}
+//		if( Card_Type[0] )
+//        {//M	vCardUID( Card_Type, bUid);
+//        //M		vCardDisplay( );
+//			if( vCardPresent )
+//                    vCardDisplay( );
+//            else{
+//            	//GUI_ClearRect(0,0,317,213);
+//                    //vCardUID( Card_Type, bUidPresent, nCardDetected, nCardPrevious);
+////                showCardUIDList( Card_Type, lista, nCardDetected, nCardPrevious);
+//                showCardUIDList( Card_Type, listaScheduled, nCardDetected, nCardPrevious);
+//            	//showTime(Card_Type, bUidPresent, nCardDetected, nCardPrevious );
+//            	if (fAlarmTimeMatched){
+//            		if (nCardDetected==nCardPrevious) {/*DA METTERE IL TAG ASSOCIATO ALL'ALLARME*/
+//            			showTimeAlarm(bUidPresent, nCardDetected, nCardPrevious );
+//            			//fAlarmTimeMatched=0;
+//            			//vTaskDelay(500);
+//            		}else{
+//            			if ((nCardDetected<nCardPrevious) /*&& (tag)*/) {
+//            				//GUI_Clear();
+//                			if (tagRimosso[0] == ptrMedic->tag[0] && tagRimosso[1] == ptrMedic->tag[1] && tagRimosso[2] == ptrMedic->tag[2] && tagRimosso[3] == ptrMedic->tag[3] ){ //tag corretto
+//            					//mostra l''ok e togli alarm (fAlarmTimeMatched = 0;)
+////                				while (tagAggiunto!=ptrMedic->tag) {
+////                					//TEMPORIZZARE IL TUTTO!
+////                				}
+//            					GUI_SetColor(GUI_GREEN);
+//                				sprintf( messaggio, "Medicina Corretta!");
+//                				GUI_DispStringAt( messaggio, 0, 150);
+//                				vTaskDelay(5000);
+//                				if (nCardDetected<nCardTot) {
+//                					GUI_DispStringAt( "Riposiziona la medicina", 0, 150);
+//                				}
+//                				fAlarmTimeMatched=0;
+//                				modifica=1;
+//                				//MODIFICARE DOSI RIMANENTI
+//                				int cc = 0;
+//                				for (cc=0; cc<maxR; cc++) {
+//                    				if ((ptrMedic->tag[1] == l_tabellaMedicine[cc][1]) && (ptrMedic->tag[2] == l_tabellaMedicine[cc][2]) && (ptrMedic->tag[3] == l_tabellaMedicine[cc][3]) && (ptrMedic->tag[4] == l_tabellaMedicine[cc][4])) {
+//                    					uint8_t dose = l_tabellaMedicine[cc][55], rimasteInt = l_tabellaMedicine[cc][62], rimasteFraz = l_tabellaMedicine[cc][63];
+//                    					uint16_t rimaste = (rimasteInt << 2) | rimasteFraz; //0b11
+//                    					rimaste = rimaste-(uint16_t)dose; //SOLO QUANDO LA ASSUMO!
+//                    					uint8_t temp = rimaste;
+//                    					temp = temp&0b00000011;
+//                    					rimasteFraz = temp ;
+//                    					rimaste >>= 2;
+//                    					rimasteInt = (uint8_t) rimaste;
+//
+//                    					l_tabellaMedicine[cc][62] = rimasteInt;
+//                    					l_tabellaMedicine[cc][63] = rimasteFraz;
+//                    				}
+//
+//                				}
+//                				ptrMedic = ptrMedic->next;
+//
+//                				IP_RTC_TIME_T oraAllarme;
+//								oraAllarme.time[RTC_TIMETYPE_HOUR]  = ptrMedic->oraA;
+//								oraAllarme.time[RTC_TIMETYPE_MINUTE]  = ptrMedic->minA;
+//								oraAllarme.time[RTC_TIMETYPE_SECOND]  = ptrMedic->secA;
+//
+//                				if (orarioDopoOrario(FullTime,oraAllarme)) {
+//                					fAlarmTimeMatched = 1;
+//									}
+//                				else{
+//                					FullTime.time[RTC_TIMETYPE_HOUR] = oraAllarme.time[RTC_TIMETYPE_HOUR];
+//                					FullTime.time[RTC_TIMETYPE_MINUTE] = oraAllarme.time[RTC_TIMETYPE_MINUTE];
+//                					FullTime.time[RTC_TIMETYPE_SECOND] = oraAllarme.time[RTC_TIMETYPE_SECOND];
+//									Chip_RTC_SetFullAlarmTime(&FullTime);
+//                				}
+//
+//            				} else{
+//            					//mostra che hai tolto il tag ERRATO!
+//            					GUI_SetColor(GUI_RED);
+//            					sprintf( messaggio, "Medicina ERRATA!");
+//            					GUI_DispStringAt( messaggio, 0, 150);
+//            					showTimeAlarm(bUidPresent, nCardDetected, nCardPrevious);
+//            					vTaskDelay(2000);
+//            					modifica=1;
+//            				}
+//
+//            			}else {
+//            				vTaskDelay(20);
+//            			}
+//            			/*DA IMPLEMENTARE IL CONTROLLO SUL TEMPO DI MANCANZA DEL TAG*/
+////            			fAlarmTimeMatched=0;
+////            			FullTime.time[RTC_TIMETYPE_MINUTE]  = 16;
+////            			FullTime.time[RTC_TIMETYPE_SECOND]  = 00;
+////            			Chip_RTC_SetFullAlarmTime(&FullTime);
+//            		}
+//            	} //else
+//            		//showTime(Card_Type, bUidPresent, nCardDetected, nCardPrevious );
+//            }
+//        }
+//		else {
+//			/*FARE CONTROLLO SE TAG TOLTO E' DELL'ALLARME O NO*/
+//			vCardReset( );
+//
+//		}
+//		xSemaphoreGive( xSemaGUIend );
+////		GUI_Delay(10);
+//		vTaskDelay( 10 );
+//	}
+//}
+
 portTASK_FUNCTION(vLcdTaskNew, pvParameters)
 {
 
@@ -655,15 +907,28 @@ portTASK_FUNCTION(vLcdTaskNew, pvParameters)
 	char messaggio[50];
 	while ( 1 ) {
 		while( xSemaphoreTake(xSemaDataAvail, portMAX_DELAY ) != pdTRUE );
+		if (modifica) {
+			GUI_Clear();
+			modifica=0;
+			showTime();
+		}
+		  if(fIntervalReached==1) {
+			  GUI_ClearRect(0,214,317,249);
+			  showTime();
+			  fIntervalReached=0;
+		  }
+
 		if( Card_Type[0] )
         {//M	vCardUID( Card_Type, bUid);
         //M		vCardDisplay( );
 			if( vCardPresent )
                     vCardDisplay( );
             else{
+            	//GUI_ClearRect(0,0,317,213);
                     //vCardUID( Card_Type, bUidPresent, nCardDetected, nCardPrevious);
-                    showCardUIDList( Card_Type, lista, nCardDetected, nCardPrevious);
-            	showTime(Card_Type, bUidPresent, nCardDetected, nCardPrevious );
+//                showCardUIDList( Card_Type, lista, nCardDetected, nCardPrevious);
+                showCardUIDList( Card_Type, listaScheduled, nCardDetected, nCardPrevious);
+            	//showTime(Card_Type, bUidPresent, nCardDetected, nCardPrevious );
             	if (fAlarmTimeMatched){
             		if (nCardDetected==nCardPrevious) {/*DA METTERE IL TAG ASSOCIATO ALL'ALLARME*/
             			showTimeAlarm(bUidPresent, nCardDetected, nCardPrevious );
@@ -671,6 +936,7 @@ portTASK_FUNCTION(vLcdTaskNew, pvParameters)
             			//vTaskDelay(500);
             		}else{
             			if ((nCardDetected<nCardPrevious) /*&& (tag)*/) {
+            				//GUI_Clear();
                 			if (tagRimosso[0] == ptrMedic->tag[0] && tagRimosso[1] == ptrMedic->tag[1] && tagRimosso[2] == ptrMedic->tag[2] && tagRimosso[3] == ptrMedic->tag[3] ){ //tag corretto
             					//mostra l''ok e togli alarm (fAlarmTimeMatched = 0;)
 //                				while (tagAggiunto!=ptrMedic->tag) {
@@ -679,8 +945,12 @@ portTASK_FUNCTION(vLcdTaskNew, pvParameters)
             					GUI_SetColor(GUI_GREEN);
                 				sprintf( messaggio, "Medicina Corretta!");
                 				GUI_DispStringAt( messaggio, 0, 150);
-                				vTaskDelay(10000);
+                				vTaskDelay(5000);
+                				while(nCardDetected<nCardTot) {
+                					GUI_DispStringAt( "Riposiziona la medicina", 0, 150);
+                				}
                 				fAlarmTimeMatched=0;
+                				modifica=1;
                 				//MODIFICARE DOSI RIMANENTI
                 				int cc = 0;
                 				for (cc=0; cc<maxR; cc++) {
@@ -723,6 +993,7 @@ portTASK_FUNCTION(vLcdTaskNew, pvParameters)
             					GUI_DispStringAt( messaggio, 0, 150);
             					showTimeAlarm(bUidPresent, nCardDetected, nCardPrevious);
             					vTaskDelay(2000);
+            					modifica=1;
             				}
 
             			}else {
@@ -734,8 +1005,8 @@ portTASK_FUNCTION(vLcdTaskNew, pvParameters)
 //            			FullTime.time[RTC_TIMETYPE_SECOND]  = 00;
 //            			Chip_RTC_SetFullAlarmTime(&FullTime);
             		}
-            	} else
-            		showTime(Card_Type, bUidPresent, nCardDetected, nCardPrevious );
+            	} //else
+            		//showTime(Card_Type, bUidPresent, nCardDetected, nCardPrevious );
             }
         }
 		else {

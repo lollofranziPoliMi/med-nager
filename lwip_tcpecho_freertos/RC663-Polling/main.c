@@ -136,14 +136,15 @@ typedef struct {
 	uint8_t info[4];
 	struct Nodo_t *prox;
 } Nodo_t;
-Nodo_t *lista;
+Nodo_t *lista, *listaScheduled;
 //Nodo_t nodo;
 /*typedef Nodo_t *Lista;
 Lista lista1;*/
 
+extern int modifica;
 extern IP_RTC_TIME_T FullTime;
 IP_RTC_TIMEINDEX_T timeTypeMio; //unused now
-#define maxR 5
+#define maxR 100
 #define maxC 100
 extern uint8_t l_tabellaMedicine[maxR][maxC];
 
@@ -153,7 +154,7 @@ typedef struct {
 	int secA;
 	int minA;
 	int oraA;
-	int scaduta;
+	int giorniAllaScadenza;//int scaduta;
 	int avvisare;
 	int importanza;
 	int presa;
@@ -404,7 +405,7 @@ void showCardUIDList( char *cardType, Nodo_t *lista, uint8_t *nCardDetected, uin
 void showTime( char *cardType, Nodo_t *lista, uint8_t *nCardDetected, uint8_t *nCardPrevious, IP_RTC_TIME_T *pTime);
 
 char  Card_Type[40], vCardPresent;
-uint8_t bUid[10], bUidPresent[100], nCardDetected, nCardPrevious;
+uint8_t bUid[10], bUidPresent[100], nCardDetected, nCardPrevious, nCardTot;
 void  GUI_DataAvailable (void);
 
 #define	debug_printf(a)
@@ -412,6 +413,7 @@ void  GUI_DataAvailable (void);
 /*****************************************************************************
  * Private types/enumerations/variables
  ****************************************************************************/
+uint32_t previousSec;
 int fIntervalReached;
 int fAlarmTimeMatched;
 int On0, On1;
@@ -454,12 +456,12 @@ void RTC_IRQHandler(void)
 
 	/* display timestamp every second */
 	sec = Chip_RTC_GetTime(RTC_TIMETYPE_SECOND);
-//	if (!(sec % 5)) {
-//		fIntervalReached = 1;	/* set flag for background */
+	if (sec != previousSec) {
+		fIntervalReached = 1;	/* set flag for background */
 //		if (fAlarmTimeMatched) {
 //			fAlarmTimeMatched = 0;
 //		}
-//	}
+	}
 
 	/* Check for alarm match */
 	if (Chip_RTC_GetIntPending(RTC_INT_ALARM)) {
@@ -709,6 +711,44 @@ nCardDetected=0;
 					} else {
 						//conta quante volte prendere la medicina
 						if (l_tabellaMedicine[counter][65]==1) {
+//							//controlla la ripetizione
+//							Chip_RTC_GetFullTime(&FullTime);
+//							IP_RTC_TIME_T dataIn;
+//							dataIn.time[RTC_TIMETYPE_DAYOFMONTH] = l_tabellaMedicine[counter][43];
+//							dataIn.time[RTC_TIMETYPE_MONTH] = l_tabellaMedicine[counter][44];
+//							dataIn.time[RTC_TIMETYPE_YEAR] = (l_tabellaMedicine[counter][45]<<8) | l_tabellaMedicine[counter][46];
+//
+//							int oraInizio = l_tabellaMedicine[counter][51];
+//							int intervalloOre = l_tabellaMedicine[counter][57];
+//							if (FullTime.time[RTC_TIMETYPE_DAYOFMONTH]==dataIn.time[RTC_TIMETYPE_DAYOFMONTH] && FullTime.time[RTC_TIMETYPE_MONTH]==dataIn.time[RTC_TIMETYPE_MONTH] && FullTime.time[RTC_TIMETYPE_YEAR]==dataIn.time[RTC_TIMETYPE_YEAR]) {
+//								//E' il giorno di inizio e lascio l'ora iniziale invariata
+//								oraInizio = oraInizio;
+//							} else {
+//								int stop = 1;
+//								while (stop){
+//									if ((oraInizio-intervalloOre)>=0) {
+//										oraInizio = oraInizio-intervalloOre;
+//									} else {
+//										stop = 0;
+//									}
+//								}
+//							}
+//							int temp = oraInizio;
+//							int contatore = 1;
+//							while ((temp+intervalloOre) < 24) {
+//								temp = temp+intervalloOre;
+//								contatore++;
+//							}
+//							int c = 0;
+//							IP_RTC_TIME_T oraMed;
+//							oraMed.time[RTC_TIMETYPE_HOUR] = oraInizio;
+//							oraMed.time[RTC_TIMETYPE_MINUTE] = l_tabellaMedicine[counter][52];
+//							oraMed.time[RTC_TIMETYPE_SECOND] = l_tabellaMedicine[counter][53];
+//							for (c=0; c<contatore; c++) {
+//								ptrMedic = inserisciInTestaListaMedOra(ptrMedic, l_tabellaMedicine[counter], oraMed);
+//								oraMed.time[RTC_TIMETYPE_HOUR] += intervalloOre;
+//							}
+/////////////////*CODICE OPEN DAY - RIPETIZIONE IN MINUTI*////////////
 							//controlla la ripetizione
 							Chip_RTC_GetFullTime(&FullTime);
 							IP_RTC_TIME_T dataIn;
@@ -717,35 +757,21 @@ nCardDetected=0;
 							dataIn.time[RTC_TIMETYPE_YEAR] = (l_tabellaMedicine[counter][45]<<8) | l_tabellaMedicine[counter][46];
 
 							int oraInizio = l_tabellaMedicine[counter][51];
-							int intervalloOre = l_tabellaMedicine[counter][57];
-							if (FullTime.time[RTC_TIMETYPE_DAYOFMONTH]==dataIn.time[RTC_TIMETYPE_DAYOFMONTH] && FullTime.time[RTC_TIMETYPE_MONTH]==dataIn.time[RTC_TIMETYPE_MONTH] && FullTime.time[RTC_TIMETYPE_YEAR]==dataIn.time[RTC_TIMETYPE_YEAR]) {
-								//E' il giorno di inizio e lascio l'ora iniziale invariata
-								oraInizio = oraInizio;
-							} else {
-								int stop = 1;
-								while (stop){
-									if ((oraInizio-intervalloOre)>=0) {
-										oraInizio = oraInizio-intervalloOre;
-									} else {
-										stop = 0;
-									}
+							int minutiInizio = l_tabellaMedicine[counter][52];
+							int intervalloMinuti = l_tabellaMedicine[counter][57];
+							int ore=0, minuti=0;
+							IP_RTC_TIME_T oraMed;
+							oraMed.time[RTC_TIMETYPE_SECOND] = l_tabellaMedicine[counter][53];
+
+							for (ore=oraInizio; ore<15; ore++) {
+								oraMed.time[RTC_TIMETYPE_HOUR] = ore;
+								for (minuti = minutiInizio; minuti<60; minuti+=3) {
+									oraMed.time[RTC_TIMETYPE_MINUTE] = minuti;
+									ptrMedic = inserisciInTestaListaMedOra(ptrMedic, l_tabellaMedicine[counter],oraMed);
 								}
 							}
-							int temp = oraInizio;
-							int contatore = 1;
-							while ((temp+intervalloOre) < 24) {
-								temp = temp+intervalloOre;
-								contatore++;
-							}
-							int c = 0;
-							IP_RTC_TIME_T oraMed;
-							oraMed.time[RTC_TIMETYPE_HOUR] = oraInizio;
-							oraMed.time[RTC_TIMETYPE_MINUTE] = l_tabellaMedicine[counter][52];
-							oraMed.time[RTC_TIMETYPE_SECOND] = l_tabellaMedicine[counter][53];
-							for (c=0; c<contatore; c++) {
-								ptrMedic = inserisciInTestaListaMedOra(ptrMedic, l_tabellaMedicine[counter], oraMed);
-								oraMed.time[RTC_TIMETYPE_HOUR] += intervalloOre;
-							}
+
+////////////////*FINE CODICE OPEN DAY - RIPETIZIONE IN MINUTI*////////////
 
 						} else {
 							//orari custom
@@ -766,6 +792,31 @@ nCardDetected=0;
 					}
 				}
 			ptrMedic = ordinamento_lista_med(ptrMedic);
+			medicinale *temp1 = ptrMedic;
+			listaScheduled = inizializza();
+			nCardTot=0;
+
+			while (temp1->next!=NULL) {
+				if (listaScheduled==NULL) {
+					listaScheduled = inserisciInTesta(listaScheduled,temp1->tag);
+					nCardTot++;
+				} else {
+					Nodo_t *temp2 = listaScheduled;
+					while (temp2->prox!=NULL) {
+						if (confronta_tag(temp1->tag,temp2->info)) {
+							//non inserire
+							break;
+						} else {
+							temp2 = temp2->prox;
+						}
+					}
+					if (!confronta_tag(temp1->tag,temp2->info)) {
+						listaScheduled = inserisciInTesta(listaScheduled,temp1->tag);
+						nCardTot++;
+					}
+				}
+				temp1 = temp1->next;
+			}
 
 			if ((ptrMedic->oraA == 0) && (ptrMedic->minA == 0) && (ptrMedic->secA == 0)) {
 				fAlarmTimeMatched = 1;
@@ -817,11 +868,13 @@ nCardDetected=0;
 
 		if (nCardDetected<nCardPrevious){
 			/*Capire il tag RIMOSSO*/
+			modifica=1;
 			tag_rimosso(listaPrev, lista);
 
 		} else {
 			if (nCardDetected>nCardPrevious){
 				/*Capire il tag AGGIUNTO*/
+				modifica=1;
 				tag_aggiunto(listaPrev, lista);
 			}
 		}

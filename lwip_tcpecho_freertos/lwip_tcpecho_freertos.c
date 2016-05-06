@@ -231,34 +231,47 @@ void msDelay(uint32_t ms)
 
 /* task list */
 int vSetupPollTask (void);
-int vLcdTask (void);
-int vLcdTaskNew (void);
+/*int vLcdTask (void);
+int vLcdTaskNew (void);*/
+int vLcdTaskOpenDay (void);
 int vRTCTask (void);
 
 #define TASK_PRIO_LCD             (tskIDLE_PRIORITY + 0UL)
 
+
+
+
+typedef struct{
+	uint8_t info[4];
+	struct Nodo_t *prox;
+} Nodo_t;
+extern Nodo_t *lista, *listaScheduled;
+
+
 xSemaphoreHandle xSemaDataAvail, xSemaGUIend;
 IP_RTC_TIME_T FullTime, dataInizio, dataFine, scadenza;
-#define maxR 5
+#define maxR 100
 #define maxC 100
+/*MEDICINE PER OPEN DAY*/
 uint8_t l_tabellaMedicine[maxR][maxC] = {
 	{
-	0x9b,0x83,0x1e,0x9f, /*TAG - 9B831E9F [0-3]*/
+//	0x9b,0x83,0x1e,0x9f, /*TAG - 9B831E9F [0-3]*/
+	0xbb,0x4a,0x1d,0x9f,
 	0x54,0x41,0x43,0x48,0x49,0x50,0x49,0x52,0x49,0x4e,
 	0x41,0x20,0x31,0x30,0x30,0x30,0x20,0x20,0x20,0x20,
 	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
 	0x20,0x20,0x20,0x20,0x20, /*NOME - TACHIPIRINA 1000 [4-38]*/
 	0x1f,0x0c,0x07,0xe0, /*SCADENZA - 31/12/2016 [39-42]*/
-	0x01,0x04,0x07,0xe0, /*DATA INIZIO ASSUNZIONE - 01/04/2016 [43-46]*/
-	0x1e,0x04,0x07,0xe0, /*DATA FINE ASSUNZIONE - 30/04/2016 [47-50]*/
-	0x09,0x00,0x00, /*ORA ASSUNZIONE - 9:00:00 [51-53]*/
-	0x7f,// - 01111111  -  0x40, /*RIPETIZIONE - 01000000 [54]*/
+	0x01,0x05,0x07,0xe0, /*DATA INIZIO ASSUNZIONE - 01/05/2016 [43-46]*/
+	0x1e,0x05,0x07,0xe0, /*DATA FINE ASSUNZIONE - 30/05/2016 [47-50]*/
+	0x0b,0x02,0x00, /*ORA ASSUNZIONE - 8:02:00 [51-53]*/
+	0x00, /*RIPETIZIONE - 00000000 [54]*/
 	0x04, /*DOSE - 00000100 [55]*/
-	0x00,0x00,0x00,0x00, /*CONTATORI GIORNI E ORE - 0|0|0|0 [56-59]*/
-	0x00,0x00, /*PRESA e IMPORTANZA - 0|0 [60-61]*/
-	0x04,0x00, //0x14,0x00, /*NUM DOSI RIMASTE - INT+DECIM 20|0 [62-63]*/
-	0x05, /*SOGLIA AVVISO - 5 [64]*/
-	0x00, /*PIU' VOLTE AL GIORNO - 0 [65]*/
+	0x03,0x03,0x00,0x00, /*CONTATORI GIORNI E ORE - 3|3|0|0 [56-59]*/
+	0x01,0x6e,//366 giorno dell'anno della scadenza 			0x00,0x00, /*PRESA e IMPORTANZA - 0|0 [60-61]*/
+	0x20,0x00, //0x14,0x00, /*NUM DOSI RIMASTE - INT+DECIM 32|0 [62-63]*/
+	0x30, /*SOGLIA AVVISO - 80 [64]*/
+	0x01, /*PIU' VOLTE AL GIORNO - 1 [65]*/
 	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
 	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
 	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
@@ -270,37 +283,15 @@ uint8_t l_tabellaMedicine[maxR][maxC] = {
 	0x4c,0x4c,0x49,0x4e,0x41,0x20,0x20,0x20,0x20,0x20,
 	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
 	0x20,0x20,0x20,0x20,0x20, /*NOME - Neo BOROCILLINA [4-38]*/
-	0x1e,0x0c,0x07,0xe0, /*SCADENZA - 30/12/2016 [39-42]*/
-	0x05,0x04,0x07,0xe0, /*DATA INIZIO ASSUNZIONE - 05/04/2016 [43-46]*/
-	0x1e,0x04,0x07,0xe0, /*DATA FINE ASSUNZIONE - 30/04/2016 [47-50]*/
-	0x09,0x02,0x00, /*ORA ASSUNZIONE - 9:02:00 [51-53]*/
-	0x50, /*RIPETIZIONE - 01010000 [54]*/
-	0x04, /*DOSE - 00000100 [55]*/
-	0x00,0x00,0x00,0x00, /*CONTATORI GIORNI E ORE - 0|0|0|0 [56-59]*/
-	0x00,0x00, /*PRESA e IMPORTANZA - 0|0 [60-61]*/
-	0x14,0x00, /*NUM DOSI RIMASTE - INT+DECIM 20|0 [62-63]*/
-	0x05, /*SOGLIA AVVISO - 5 [64]*/
-	0x00, /*PIU' VOLTE AL GIORNO - 0 [65]*/
-	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
-	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
-	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
-	0x20,0x20,0x20,0x20 /*NOTE - empty [66-99]*/
-	},
-	{
-	0xab,0xec,0x1d,0x9f, /*TAG - ABEC1D9F [0-3]*/
-	0x50,0x52,0x4f,0x56,0x41,0x20,0x20,0x20,0x20,0x20,
-	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
-	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
-	0x20,0x20,0x20,0x20,0x20, /*NOME - PROVA [4-38]*/
-	0x1e,0x0c,0x07,0xe0, /*SCADENZA - 30/12/2016 [39-42]*/
-	0x05,0x04,0x07,0xe0, /*DATA INIZIO ASSUNZIONE - 05/04/2016 [43-46]*/
-	0x1e,0x04,0x07,0xe0, /*DATA FINE ASSUNZIONE - 30/04/2016 [47-50]*/
-	0x08,0x00,0x00, /*ORA ASSUNZIONE - 8:00:00 [51-53]*/
+	0x1e,0x0c,0x07,0xe0, /*SCADENZA - 30/5/2016 [39-42]*/
+	0x01,0x05,0x07,0xe0, /*DATA INIZIO ASSUNZIONE - 01/05/2016 [43-46]*/
+	0x1e,0x05,0x07,0xe0, /*DATA FINE ASSUNZIONE - 30/05/2016 [47-50]*/
+	0x0b,0x04,0x00, /*ORA ASSUNZIONE - 8:04:00 [51-53]*/
 	0x00, /*RIPETIZIONE - 00000000 [54]*/
 	0x04, /*DOSE - 00000100 [55]*/
-	0x08,0x08,0x00,0x00, /*CONTATORI ORE E GIORNI - 8|8|0|0 [56-59]*/
-	0x00,0x00, /*PRESA e IMPORTANZA - 0|0 [60-61]*/
-	0x14,0x00, /*NUM DOSI RIMASTE - INT+DECIM 20|0 [62-63]*/
+	0x03,0x03,0x00,0x00, /*CONTATORI GIORNI E ORE - 3|3|0|0 [56-59]*/
+	0x00,0x97,//151 giorno dell'anno della scadenza 				0x00,0x00, /*PRESA e IMPORTANZA - 0|0 [60-61]*/
+	0x50,0x00, /*NUM DOSI RIMASTE - INT+DECIM 80|0 [62-63]*/
 	0x05, /*SOGLIA AVVISO - 5 [64]*/
 	0x01, /*PIU' VOLTE AL GIORNO - 1 [65]*/
 	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
@@ -309,60 +300,152 @@ uint8_t l_tabellaMedicine[maxR][maxC] = {
 	0x20,0x20,0x20,0x20 /*NOTE - empty [66-99]*/
 	},
 	{
-	0xbb,0x4a,0x1d,0x9f, /*TAG - BB4A1D9F [0-3]*/
-	0x4d,0x45,0x44,0x49,0x43,0x49,0x4e,0x41,0x20,0x50,
-	0x45,0x52,0x53,0x4f,0x4e,0x41,0x4c,0x49,0x5a,0x5a,
-	0x41,0x54,0x41,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
-	0x20,0x20,0x20,0x20,0x20, /*NOME - MEDICINA PERSONALIZZATA [4-38]*/
+	0xab,0xec,0x1d,0x9f, /*TAG - ABEC1D9F [0-3]*/
+	0x41,0x52,0x44,0x55,0x49,0x4e,0x4f,0x20,0x20,0x20,
+	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
+	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
+	0x20,0x20,0x20,0x20,0x20, /*NOME - ARDUINO      PROVA [4-38]*/
 	0x1e,0x0c,0x07,0xe0, /*SCADENZA - 30/12/2016 [39-42]*/
-	0x05,0x04,0x07,0xe0, /*DATA INIZIO ASSUNZIONE - 05/04/2016 [43-46]*/
-	0x1e,0x04,0x07,0xe0, /*DATA FINE ASSUNZIONE - 30/04/2016 [47-50]*/
-	0x06,0x00,0x00, /*ORA ASSUNZIONE - 6:00:00 [51-53]*/
+	0x01,0x05,0x07,0xe0, /*DATA INIZIO ASSUNZIONE - 01/05/2016 [43-46]*/
+	0x1e,0x05,0x07,0xe0, /*DATA FINE ASSUNZIONE - 30/05/2016 [47-50]*/
+	0x0b,0x06,0x00, /*ORA ASSUNZIONE - 8:06:00 [51-53]*/
 	0x00, /*RIPETIZIONE - 00000000 [54]*/
 	0x04, /*DOSE - 00000100 [55]*/
-	0x00,0x00,0x00,0x00, /*CONTATORI ORE E GIORNI - 0|0|0|0 [56-59]*/
-	0x00,0x00, /*PRESA e IMPORTANZA - 0|0 [60-61]*/
-	0x14,0x00, /*NUM DOSI RIMASTE - INT+DECIM 20|0 [62-63]*/
+	0x03,0x03,0x00,0x00, /*CONTATORI ORE E GIORNI - 3|3|0|0 [56-59]*/
+	0x01,0x6e,//366 giorno dell'anno della scadenza 				0x00,0x00, /*PRESA e IMPORTANZA - 0|0 [60-61]*/
+	0x64,0x00, /*NUM DOSI RIMASTE - INT+DECIM 100|0 [62-63]*/
 	0x05, /*SOGLIA AVVISO - 5 [64]*/
-	0x05, /*PIU' VOLTE AL GIORNO - 5 [65]*/
-	0x08,0x00,0x00,/*ora 2 personalizzata - 8:00:00 [66-68]*/
-	0x0a,0x00,0x00,/*ora 3 personalizzata - 10:00:00 [69-71]*/
-	0x14,0x00,0x00,/*ora 4 personalizzata - 20:00:00 [72-74]*/
-	0x15,0x00,0x00,/*ora 5 personalizzata - 21:00:00 [75-77]*/
-	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
-	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
-	0x20,0x20,0x20,0x20 /*NOTE - empty [78-99]*/
-	},
-	{
-	0xfb,0x4a,0x1d,0x9f, /*TAG - FB4A1D9F [0-3]*/
-	0x50,0x52,0x4f,0x56,0x41,0x20,0x4f,0x47,0x4e,0x49,
-	0x20,0x32,0x20,0x47,0x49,0x4f,0x52,0x4e,0x49,0x20,
-	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
-	0x20,0x20,0x20,0x20,0x20, /*NOME - PROVA OGNI 2 GIORNI [4-38]*/
-	0x1e,0x0c,0x07,0xe0, /*SCADENZA - 30/12/2016 [39-42]*/
-	0x05,0x04,0x07,0xe0, /*DATA INIZIO ASSUNZIONE - 05/04/2016 [43-46]*/
-	0x1e,0x04,0x07,0xe0, /*DATA FINE ASSUNZIONE - 30/04/2016 [47-50]*/
-	0x10,0x00,0x00, /*ORA ASSUNZIONE - 10:00:00 [51-53]*/
-	0x00, /*RIPETIZIONE - 00000000 [54]*/
-	0x04, /*DOSE - 00000100 [55]*/
-	0x00,0x00,0x01,0x02, /*CONTATORI ORE E GIORNI - 0|0|1|2 [56-59]*/
-	0x00,0x00, /*PRESA e IMPORTANZA - 0|0 [60-61]*/
-	0x14,0x00, /*NUM DOSI RIMASTE - INT+DECIM 20|0 [62-63]*/
-	0x05, /*SOGLIA AVVISO - 5 [64]*/
-	0x00, /*PIU' VOLTE AL GIORNO - 0 [65]*/
+	0x01, /*PIU' VOLTE AL GIORNO - 1 [65]*/
 	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
 	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
 	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
 	0x20,0x20,0x20,0x20 /*NOTE - empty [66-99]*/
 	}
 };
+
+///*OLD TABLE */
+//uint8_t l_tabellaMedicineOLD[maxR][maxC] = {
+//	{
+//	0x9b,0x83,0x1e,0x9f, /*TAG - 9B831E9F [0-3]*/
+//	0x54,0x41,0x43,0x48,0x49,0x50,0x49,0x52,0x49,0x4e,
+//	0x41,0x20,0x31,0x30,0x30,0x30,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20,0x20, /*NOME - TACHIPIRINA 1000 [4-38]*/
+//	0x1f,0x0c,0x07,0xe0, /*SCADENZA - 31/12/2016 [39-42]*/
+//	0x01,0x04,0x07,0xe0, /*DATA INIZIO ASSUNZIONE - 01/04/2016 [43-46]*/
+//	0x1e,0x04,0x07,0xe0, /*DATA FINE ASSUNZIONE - 30/04/2016 [47-50]*/
+//	0x09,0x00,0x00, /*ORA ASSUNZIONE - 9:00:00 [51-53]*/
+//	0x7f,// - 01111111  -  0x40, /*RIPETIZIONE - 01000000 [54]*/
+//	0x04, /*DOSE - 00000100 [55]*/
+//	0x00,0x00,0x00,0x00, /*CONTATORI GIORNI E ORE - 0|0|0|0 [56-59]*/
+//	0x00,0x00, /*PRESA e IMPORTANZA - 0|0 [60-61]*/
+//	0x04,0x00, //0x14,0x00, /*NUM DOSI RIMASTE - INT+DECIM 20|0 [62-63]*/
+//	0x05, /*SOGLIA AVVISO - 5 [64]*/
+//	0x00, /*PIU' VOLTE AL GIORNO - 0 [65]*/
+//	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20 /*NOTE - empty [66-99]*/
+//	},
+//	{
+//	0x6b,0xec,0x1d,0x9f, /*TAG - 6BEC1D9F [0-3]*/
+//	0x4e,0x65,0x6f,0x20,0x42,0x4f,0x52,0x4f,0x43,0x49,
+//	0x4c,0x4c,0x49,0x4e,0x41,0x20,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20,0x20, /*NOME - Neo BOROCILLINA [4-38]*/
+//	0x1e,0x0c,0x07,0xe0, /*SCADENZA - 30/12/2016 [39-42]*/
+//	0x05,0x04,0x07,0xe0, /*DATA INIZIO ASSUNZIONE - 05/04/2016 [43-46]*/
+//	0x1e,0x04,0x07,0xe0, /*DATA FINE ASSUNZIONE - 30/04/2016 [47-50]*/
+//	0x09,0x02,0x00, /*ORA ASSUNZIONE - 9:02:00 [51-53]*/
+//	0x50, /*RIPETIZIONE - 01010000 [54]*/
+//	0x04, /*DOSE - 00000100 [55]*/
+//	0x00,0x00,0x00,0x00, /*CONTATORI GIORNI E ORE - 0|0|0|0 [56-59]*/
+//	0x00,0x00, /*PRESA e IMPORTANZA - 0|0 [60-61]*/
+//	0x14,0x00, /*NUM DOSI RIMASTE - INT+DECIM 20|0 [62-63]*/
+//	0x05, /*SOGLIA AVVISO - 5 [64]*/
+//	0x00, /*PIU' VOLTE AL GIORNO - 0 [65]*/
+//	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20 /*NOTE - empty [66-99]*/
+//	},
+//	{
+//	0xab,0xec,0x1d,0x9f, /*TAG - ABEC1D9F [0-3]*/
+//	0x50,0x52,0x4f,0x56,0x41,0x20,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20,0x20, /*NOME - PROVA [4-38]*/
+//	0x1e,0x0c,0x07,0xe0, /*SCADENZA - 30/12/2016 [39-42]*/
+//	0x05,0x04,0x07,0xe0, /*DATA INIZIO ASSUNZIONE - 05/04/2016 [43-46]*/
+//	0x1e,0x04,0x07,0xe0, /*DATA FINE ASSUNZIONE - 30/04/2016 [47-50]*/
+//	0x08,0x00,0x00, /*ORA ASSUNZIONE - 8:00:00 [51-53]*/
+//	0x00, /*RIPETIZIONE - 00000000 [54]*/
+//	0x04, /*DOSE - 00000100 [55]*/
+//	0x08,0x08,0x00,0x00, /*CONTATORI ORE E GIORNI - 8|8|0|0 [56-59]*/
+//	0x00,0x00, /*PRESA e IMPORTANZA - 0|0 [60-61]*/
+//	0x14,0x00, /*NUM DOSI RIMASTE - INT+DECIM 20|0 [62-63]*/
+//	0x05, /*SOGLIA AVVISO - 5 [64]*/
+//	0x01, /*PIU' VOLTE AL GIORNO - 1 [65]*/
+//	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20 /*NOTE - empty [66-99]*/
+//	},
+//	{
+//	0xbb,0x4a,0x1d,0x9f, /*TAG - BB4A1D9F [0-3]*/
+//	0x4d,0x45,0x44,0x49,0x43,0x49,0x4e,0x41,0x20,0x50,
+//	0x45,0x52,0x53,0x4f,0x4e,0x41,0x4c,0x49,0x5a,0x5a,
+//	0x41,0x54,0x41,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20,0x20, /*NOME - MEDICINA PERSONALIZZATA [4-38]*/
+//	0x1e,0x0c,0x07,0xe0, /*SCADENZA - 30/12/2016 [39-42]*/
+//	0x05,0x04,0x07,0xe0, /*DATA INIZIO ASSUNZIONE - 05/04/2016 [43-46]*/
+//	0x1e,0x04,0x07,0xe0, /*DATA FINE ASSUNZIONE - 30/04/2016 [47-50]*/
+//	0x06,0x00,0x00, /*ORA ASSUNZIONE - 6:00:00 [51-53]*/
+//	0x00, /*RIPETIZIONE - 00000000 [54]*/
+//	0x04, /*DOSE - 00000100 [55]*/
+//	0x00,0x00,0x00,0x00, /*CONTATORI ORE E GIORNI - 0|0|0|0 [56-59]*/
+//	0x00,0x00, /*PRESA e IMPORTANZA - 0|0 [60-61]*/
+//	0x14,0x00, /*NUM DOSI RIMASTE - INT+DECIM 20|0 [62-63]*/
+//	0x05, /*SOGLIA AVVISO - 5 [64]*/
+//	0x05, /*PIU' VOLTE AL GIORNO - 5 [65]*/
+//	0x08,0x00,0x00,/*ora 2 personalizzata - 8:00:00 [66-68]*/
+//	0x0a,0x00,0x00,/*ora 3 personalizzata - 10:00:00 [69-71]*/
+//	0x14,0x00,0x00,/*ora 4 personalizzata - 20:00:00 [72-74]*/
+//	0x15,0x00,0x00,/*ora 5 personalizzata - 21:00:00 [75-77]*/
+//	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20 /*NOTE - empty [78-99]*/
+//	},
+//	{
+//	0xfb,0x4a,0x1d,0x9f, /*TAG - FB4A1D9F [0-3]*/
+//	0x50,0x52,0x4f,0x56,0x41,0x20,0x4f,0x47,0x4e,0x49,
+//	0x20,0x32,0x20,0x47,0x49,0x4f,0x52,0x4e,0x49,0x20,
+//	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20,0x20, /*NOME - PROVA OGNI 2 GIORNI [4-38]*/
+//	0x1e,0x0c,0x07,0xe0, /*SCADENZA - 30/12/2016 [39-42]*/
+//	0x05,0x04,0x07,0xe0, /*DATA INIZIO ASSUNZIONE - 05/04/2016 [43-46]*/
+//	0x1e,0x04,0x07,0xe0, /*DATA FINE ASSUNZIONE - 30/04/2016 [47-50]*/
+//	0x10,0x00,0x00, /*ORA ASSUNZIONE - 10:00:00 [51-53]*/
+//	0x00, /*RIPETIZIONE - 00000000 [54]*/
+//	0x04, /*DOSE - 00000100 [55]*/
+//	0x00,0x00,0x01,0x02, /*CONTATORI ORE E GIORNI - 0|0|1|2 [56-59]*/
+//	0x00,0x00, /*PRESA e IMPORTANZA - 0|0 [60-61]*/
+//	0x14,0x00, /*NUM DOSI RIMASTE - INT+DECIM 20|0 [62-63]*/
+//	0x05, /*SOGLIA AVVISO - 5 [64]*/
+//	0x00, /*PIU' VOLTE AL GIORNO - 0 [65]*/
+//	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,0x20,
+//	0x20,0x20,0x20,0x20 /*NOTE - empty [66-99]*/
+//	}
+//};
 typedef struct {
 	uint8_t tag[4];
 	char nome[35];
 	int secA;
 	int minA;
 	int oraA;
-	int scaduta;
+	int giorniAllaScadenza;//int scaduta;
 	int avvisare;
 	int importanza;
 	int presa;
@@ -370,6 +453,7 @@ typedef struct {
 } medicinale;
 medicinale medic; //creo medicinale
 medicinale *ptrMedic;
+extern uint8_t nCardTot;
 
 medicinale* inizializzaListaMed(){
 	return NULL;
@@ -450,7 +534,13 @@ medicinale* inserisciInTestaListaMed(medicinale* l, uint8_t m[100]){
 				scadenza.time[RTC_TIMETYPE_DAYOFMONTH] = m[39];
 				scadenza.time[RTC_TIMETYPE_MONTH] = m[40];
 				scadenza.time[RTC_TIMETYPE_YEAR] = (m[41]<<8) | m[42];
-				temp->scaduta = dataDopoData(FullTime,scadenza);
+				scadenza.time[RTC_TIMETYPE_DAYOFYEAR] = (m[60]<<8) | m[61];
+//				temp->scaduta = dataDopoData(FullTime,scadenza);
+				if (dataDopoData(FullTime,scadenza)) {
+					temp->giorniAllaScadenza = differenzaGiorni(FullTime,scadenza);
+				} else {
+					temp->giorniAllaScadenza = differenzaGiorni(scadenza,FullTime);
+				}
 
 				uint8_t /*dose = m[55],*/ rimasteInt = m[62], rimasteFraz = m[63], sogliaAvvisoEsaurimento = m[64];
 				uint16_t rimaste = (rimasteInt << 2) | rimasteFraz; //0b11
@@ -504,7 +594,13 @@ medicinale* inserisciInTestaListaMedOra(medicinale* l, uint8_t m[100], IP_RTC_TI
 		scadenza.time[RTC_TIMETYPE_DAYOFMONTH] = m[39];
 		scadenza.time[RTC_TIMETYPE_MONTH] = m[40];
 		scadenza.time[RTC_TIMETYPE_YEAR] = (m[41]<<8) | m[42];
-		temp->scaduta = dataDopoData(FullTime,scadenza);
+		scadenza.time[RTC_TIMETYPE_DAYOFYEAR] = (m[60]<<8) | m[61];
+//		temp->scaduta = dataDopoData(FullTime,scadenza);
+		if (dataDopoData(FullTime,scadenza)) {
+			temp->giorniAllaScadenza = differenzaGiorni(FullTime,scadenza);
+		} else {
+			temp->giorniAllaScadenza = differenzaGiorni(scadenza,FullTime);
+		}
 
 		uint8_t rimasteInt = m[62], rimasteFraz = m[63], sogliaAvvisoEsaurimento = m[64];
 		uint16_t rimaste = (rimasteInt << 2) | rimasteFraz; //0b11
@@ -595,6 +691,10 @@ IP_RTC_TIME_T differenzaDate(IP_RTC_TIME_T data1, IP_RTC_TIME_T data2){ // DA VA
 	return diff;
 }
 int differenzaGiorni(IP_RTC_TIME_T data1, IP_RTC_TIME_T data2) {
+	/*
+	 * data1 e data2 devono avere impostato l'attributo .time[RTC_TIMETYPE_DAYOFYEAR]
+	 * e data1 deve essere SUCCESSIVA a data2
+	 */
 	if (data1.time[RTC_TIMETYPE_YEAR] == data2.time[RTC_TIMETYPE_YEAR]) {
 		if (data1.time[RTC_TIMETYPE_DAYOFYEAR] != 0 && data2.time[RTC_TIMETYPE_DAYOFYEAR] != 0) return (data1.time[RTC_TIMETYPE_DAYOFYEAR] - data2.time[RTC_TIMETYPE_DAYOFYEAR]);
 	} else {
@@ -635,14 +735,23 @@ int main(void)
 
 	Chip_RTC_Init();
 
-	/*Set current time for RTC 8:59:20PM, 2016-04-11 MONDAY 102*/
-	FullTime.time[RTC_TIMETYPE_SECOND]  	= 40;
-	FullTime.time[RTC_TIMETYPE_MINUTE]  	= 59;
-	FullTime.time[RTC_TIMETYPE_HOUR]    	= 8;
-	FullTime.time[RTC_TIMETYPE_DAYOFMONTH] 	= 11;
-	FullTime.time[RTC_TIMETYPE_DAYOFWEEK]	= 1;
-	FullTime.time[RTC_TIMETYPE_DAYOFYEAR]	= 102;
-	FullTime.time[RTC_TIMETYPE_MONTH]   	= 04;
+//	/*Set current time for RTC 8:59:20PM, 2016-04-11 MONDAY 102*/
+//	FullTime.time[RTC_TIMETYPE_SECOND]  	= 40;
+//	FullTime.time[RTC_TIMETYPE_MINUTE]  	= 59;
+//	FullTime.time[RTC_TIMETYPE_HOUR]    	= 23;//8;
+//	FullTime.time[RTC_TIMETYPE_DAYOFMONTH] 	= 11;
+//	FullTime.time[RTC_TIMETYPE_DAYOFWEEK]	= 1;
+//	FullTime.time[RTC_TIMETYPE_DAYOFYEAR]	= 102;
+//	FullTime.time[RTC_TIMETYPE_MONTH]   	= 04;
+//	FullTime.time[RTC_TIMETYPE_YEAR]    	= 2016;
+	/*Set current time for RTC 8:00:00AM, 2016-05-05 THURSDAY 126*/
+	FullTime.time[RTC_TIMETYPE_SECOND]  	= 0;
+	FullTime.time[RTC_TIMETYPE_MINUTE]  	= 0;
+	FullTime.time[RTC_TIMETYPE_HOUR]    	= 11;
+	FullTime.time[RTC_TIMETYPE_DAYOFMONTH] 	= 5;
+	FullTime.time[RTC_TIMETYPE_DAYOFWEEK]	= 4;
+	FullTime.time[RTC_TIMETYPE_DAYOFYEAR]	= 126;
+	FullTime.time[RTC_TIMETYPE_MONTH]   	= 5;
 	FullTime.time[RTC_TIMETYPE_YEAR]    	= 2016;
 
 	Chip_RTC_SetFullTime(&FullTime);
@@ -701,45 +810,71 @@ int main(void)
 		} else {
 			//conta quante volte prendere la medicina
 			if (l_tabellaMedicine[counter][65]==1) {
-				//controlla la ripetizione
-				Chip_RTC_GetFullTime(&FullTime);
-				IP_RTC_TIME_T dataIn;
-				dataIn.time[RTC_TIMETYPE_DAYOFMONTH] = l_tabellaMedicine[counter][43];
-				dataIn.time[RTC_TIMETYPE_MONTH] = l_tabellaMedicine[counter][44];
-				dataIn.time[RTC_TIMETYPE_YEAR] = (l_tabellaMedicine[counter][45]<<8) | l_tabellaMedicine[counter][46];
+//				//controlla la ripetizione
+//				Chip_RTC_GetFullTime(&FullTime);
+//				IP_RTC_TIME_T dataIn;
+//				dataIn.time[RTC_TIMETYPE_DAYOFMONTH] = l_tabellaMedicine[counter][43];
+//				dataIn.time[RTC_TIMETYPE_MONTH] = l_tabellaMedicine[counter][44];
+//				dataIn.time[RTC_TIMETYPE_YEAR] = (l_tabellaMedicine[counter][45]<<8) | l_tabellaMedicine[counter][46];
+//
+//				int oraInizio = l_tabellaMedicine[counter][51];
+//				int intervalloOre = l_tabellaMedicine[counter][57];
+//				if (FullTime.time[RTC_TIMETYPE_DAYOFMONTH]==dataIn.time[RTC_TIMETYPE_DAYOFMONTH] && FullTime.time[RTC_TIMETYPE_MONTH]==dataIn.time[RTC_TIMETYPE_MONTH] && FullTime.time[RTC_TIMETYPE_YEAR]==dataIn.time[RTC_TIMETYPE_YEAR]) {
+//					//E' il giorno di inizio e lascio l'ora iniziale invariata
+//					oraInizio = oraInizio;
+//				} else {
+//					int go = 1;
+//					while (go){
+//						if ((oraInizio-intervalloOre)>=0) {
+//							oraInizio = oraInizio-intervalloOre;
+//						} else {
+//							go = 0;
+//						}
+//					}
+//				}
+//				int temp = oraInizio;
+//				int contatore = 1;
+//				while ((temp+intervalloOre) < 24) {
+//					temp = temp+intervalloOre;
+//					contatore++;
+//				}
+//				int c = 0;
+//				IP_RTC_TIME_T oraMed;
+//				oraMed.time[RTC_TIMETYPE_HOUR] = oraInizio;
+//				oraMed.time[RTC_TIMETYPE_MINUTE] = l_tabellaMedicine[counter][52];
+//				oraMed.time[RTC_TIMETYPE_SECOND] = l_tabellaMedicine[counter][53];
+//				for (c=0; c<contatore; c++) {
+//
+//					ptrMedic = inserisciInTestaListaMedOra(ptrMedic, l_tabellaMedicine[counter], oraMed);
+//
+//					oraMed.time[RTC_TIMETYPE_HOUR] += intervalloOre;
+//				}
 
-				int oraInizio = l_tabellaMedicine[counter][51];
-				int intervalloOre = l_tabellaMedicine[counter][57];
-				if (FullTime.time[RTC_TIMETYPE_DAYOFMONTH]==dataIn.time[RTC_TIMETYPE_DAYOFMONTH] && FullTime.time[RTC_TIMETYPE_MONTH]==dataIn.time[RTC_TIMETYPE_MONTH] && FullTime.time[RTC_TIMETYPE_YEAR]==dataIn.time[RTC_TIMETYPE_YEAR]) {
-					//E' il giorno di inizio e lascio l'ora iniziale invariata
-					oraInizio = oraInizio;
-				} else {
-					int go = 1;
-					while (go){
-						if ((oraInizio-intervalloOre)>=0) {
-							oraInizio = oraInizio-intervalloOre;
-						} else {
-							go = 0;
-						}
-					}
-				}
-				int temp = oraInizio;
-				int contatore = 1;
-				while ((temp+intervalloOre) < 24) {
-					temp = temp+intervalloOre;
-					contatore++;
-				}
-				int c = 0;
-				IP_RTC_TIME_T oraMed;
-				oraMed.time[RTC_TIMETYPE_HOUR] = oraInizio;
-				oraMed.time[RTC_TIMETYPE_MINUTE] = l_tabellaMedicine[counter][52];
-				oraMed.time[RTC_TIMETYPE_SECOND] = l_tabellaMedicine[counter][53];
-				for (c=0; c<contatore; c++) {
+				/////////////////*CODICE OPEN DAY - RIPETIZIONE IN MINUTI*////////////
+							//controlla la ripetizione
+							Chip_RTC_GetFullTime(&FullTime);
+							IP_RTC_TIME_T dataIn;
+							dataIn.time[RTC_TIMETYPE_DAYOFMONTH] = l_tabellaMedicine[counter][43];
+							dataIn.time[RTC_TIMETYPE_MONTH] = l_tabellaMedicine[counter][44];
+							dataIn.time[RTC_TIMETYPE_YEAR] = (l_tabellaMedicine[counter][45]<<8) | l_tabellaMedicine[counter][46];
 
-					ptrMedic = inserisciInTestaListaMedOra(ptrMedic, l_tabellaMedicine[counter], oraMed);
+							int oraInizio = l_tabellaMedicine[counter][51];
+							int minutiInizio = l_tabellaMedicine[counter][52];
+							int intervalloMinuti = l_tabellaMedicine[counter][57];
+							int ore=0, minuti=0;
+							IP_RTC_TIME_T oraMed;
+							oraMed.time[RTC_TIMETYPE_SECOND] = l_tabellaMedicine[counter][53];
 
-					oraMed.time[RTC_TIMETYPE_HOUR] += intervalloOre;
-				}
+							for (ore=oraInizio; ore<13; ore++) {
+								oraMed.time[RTC_TIMETYPE_HOUR] = ore;
+								for (minuti = minutiInizio; minuti<60; minuti+=6) {
+									oraMed.time[RTC_TIMETYPE_MINUTE] = minuti;
+									ptrMedic = inserisciInTestaListaMedOra(ptrMedic, l_tabellaMedicine[counter],oraMed);
+								}
+							}
+
+////////////////*FINE CODICE OPEN DAY - RIPETIZIONE IN MINUTI*////////////
+
 
 			} else {
 				//orari custom
@@ -765,6 +900,33 @@ int main(void)
 		}
 	}
 	ptrMedic = ordinamento_lista_med(ptrMedic);
+
+	medicinale *temp1 = ptrMedic;
+	listaScheduled = inizializza();
+	nCardTot = 0;
+
+	while (temp1->next!=NULL) {
+		if (listaScheduled==NULL) {
+			listaScheduled = inserisciInTesta(listaScheduled,temp1->tag);
+			nCardTot++;
+		} else {
+			Nodo_t *temp2 = listaScheduled;
+			while (temp2->prox!=NULL) {
+				if (confronta_tag(temp1->tag,temp2->info)) {
+					//non inserire
+					break;
+				} else {
+					temp2 = temp2->prox;
+				}
+			}
+			if (!confronta_tag(temp1->tag,temp2->info)) {
+				listaScheduled = inserisciInTesta(listaScheduled,temp1->tag);
+				nCardTot++;
+			}
+		}
+		temp1 = temp1->next;
+	}
+
 
 	//Inizio dall'orario attuale e non considero tutti i medicinali precedenti in giornata
 	IP_RTC_TIME_T oraAllarme;
@@ -812,7 +974,7 @@ int main(void)
 				configMINIMAL_STACK_SIZE * 4, NULL, TASK_PRIO_LCD,
 				(xTaskHandle *) NULL); */
 
-	xTaskCreate(vLcdTaskNew, (signed char *) "vLCDTaskNew",
+	xTaskCreate(vLcdTaskOpenDay, (signed char *) "vLcdTaskOpenDay",
 				configMINIMAL_STACK_SIZE * 4, NULL, TASK_PRIO_LCD,
 				(xTaskHandle *) NULL);
 
