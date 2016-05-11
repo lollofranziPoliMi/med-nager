@@ -861,6 +861,7 @@ int vSetupPollTask (void)
     		} else {
     			statoDisplayP=-1;
     			break;
+
     		}
     	}
 
