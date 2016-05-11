@@ -136,7 +136,7 @@ typedef struct {
 	uint8_t info[4];
 	struct Nodo_t *prox;
 } Nodo_t;
-Nodo_t *lista, *listaScheduled;
+Nodo_t *lista, *listaScheduled, *listaTagMancanti;
 //Nodo_t nodo;
 /*typedef Nodo_t *Lista;
 Lista lista1;*/
@@ -147,6 +147,7 @@ IP_RTC_TIMEINDEX_T timeTypeMio; //unused now
 #define maxR 100
 #define maxC 100
 extern uint8_t l_tabellaMedicine[maxR][maxC];
+extern int setup;
 
 typedef struct {
 	uint8_t tag[4];
@@ -165,6 +166,9 @@ extern medicinale *ptrMedic;
 extern medicinale* inizializzaListaMed();
 extern medicinale* inserisciInTestaListaMed(medicinale* l, uint8_t m[100]);
 extern medicinale* ordinamento_lista_med(medicinale *pointer);
+extern int statoDisplay, statoDisplayP;
+int rimosso, aggiunto;
+uint8_t tagProva[4];
 
 /* Set the default key for the Mifare (R) Classic cards MAD secret key  */
 static /* const */ uint8_t MAD_Key[6] = {0xa0U, 0xa1U, 0xa2U, 0xa3U, 0xa4U, 0xa5U};
@@ -418,6 +422,7 @@ int fIntervalReached;
 int fAlarmTimeMatched;
 int On0, On1;
 /*extern */uint8_t tagRimosso[4], tagAggiunto[4];
+//extern int statoDisplay=0, statoDisplayP=0;
 
 /*******************************************************************************
 **   Main Function
@@ -540,6 +545,10 @@ void tag_aggiunto(Nodo_t *listaPrev, Nodo_t *lista){
 	tagAggiunto[1] = lista->info[1];
 	tagAggiunto[2] = lista->info[2];
 	tagAggiunto[3] = lista->info[3];
+	tagProva[0] = listaPrev->info[0];
+	tagProva[1] = listaPrev->info[1];
+	tagProva[2] = listaPrev->info[2];
+	tagProva[3] = listaPrev->info[3];
 	/*Riparto dalla testa delle liste*/
 	listaPrev = tLP;
 	lista = tL;
@@ -571,10 +580,82 @@ void tag_rimosso(Nodo_t *listaPrev, Nodo_t *lista){
 	tagRimosso[1] = listaPrev->info[1];
 	tagRimosso[2] = listaPrev->info[2];
 	tagRimosso[3] = listaPrev->info[3];
+	tagProva[0] = listaPrev->info[0];
+	tagProva[1] = listaPrev->info[1];
+	tagProva[2] = listaPrev->info[2];
+	tagProva[3] = listaPrev->info[3];
 	/*Riparto dalla testa delle liste*/
 	listaPrev = tLP;
 	lista = tL;
 	//return tagRimosso;
+}
+
+void calcoloStatoDisplay() {
+	if (fAlarmTimeMatched) {
+		//MOSTRA ALLARME
+		statoDisplay = 6;
+
+		if (rimosso) {
+			if (confronta_tag(tagRimosso,ptrMedic->tag)) {//(tagRimosso[0] == ptrMedic->tag[0] && tagRimosso[1] == ptrMedic->tag[1] && tagRimosso[2] == ptrMedic->tag[2] && tagRimosso[3] == ptrMedic->tag[3] )) {
+				//TAG RIMOSSO CORRETTO
+				statoDisplay = 3;
+			}
+			if (!confronta_tag(tagRimosso,ptrMedic->tag)) {
+				//TAG RIMOSSO ERRATO
+				statoDisplay = 5;
+			}
+		}
+
+		if ((statoDisplayP==3) && confronta_tag(tagAggiunto,ptrMedic->tag)) {//(tagAggiunto[0] == ptrMedic->tag[0] && tagAggiunto[1] == ptrMedic->tag[1] && tagAggiunto[2] == ptrMedic->tag[2] && tagAggiunto[3] == ptrMedic->tag[3] )){
+			fAlarmTimeMatched=0;
+			//MODIFICARE DOSI RIMANENTI
+			int cc = 0;
+			for (cc=0; cc<maxR; cc++) {
+				if ((ptrMedic->tag[1] == l_tabellaMedicine[cc][1]) && (ptrMedic->tag[2] == l_tabellaMedicine[cc][2]) && (ptrMedic->tag[3] == l_tabellaMedicine[cc][3]) && (ptrMedic->tag[4] == l_tabellaMedicine[cc][4])) {
+					uint8_t dose = l_tabellaMedicine[cc][55], rimasteInt = l_tabellaMedicine[cc][62], rimasteFraz = l_tabellaMedicine[cc][63];
+					uint16_t rimaste = (rimasteInt << 2) | rimasteFraz; //0b11
+					rimaste = rimaste-(uint16_t)dose; //SOLO QUANDO LA ASSUMO!
+					uint8_t temp = rimaste;
+					temp = temp&0b00000011;
+					rimasteFraz = temp ;
+					rimaste >>= 2;
+					rimasteInt = (uint8_t) rimaste;
+
+					l_tabellaMedicine[cc][62] = rimasteInt;
+					l_tabellaMedicine[cc][63] = rimasteFraz;
+				}
+
+			}
+			ptrMedic = ptrMedic->next;
+
+			IP_RTC_TIME_T oraAllarme;
+			oraAllarme.time[RTC_TIMETYPE_HOUR]  = ptrMedic->oraA;
+			oraAllarme.time[RTC_TIMETYPE_MINUTE]  = ptrMedic->minA;
+			oraAllarme.time[RTC_TIMETYPE_SECOND]  = ptrMedic->secA;
+
+			if (orarioDopoOrario(FullTime,oraAllarme)) {
+				fAlarmTimeMatched = 1;
+			}
+			else{
+				FullTime.time[RTC_TIMETYPE_HOUR] = oraAllarme.time[RTC_TIMETYPE_HOUR];
+				FullTime.time[RTC_TIMETYPE_MINUTE] = oraAllarme.time[RTC_TIMETYPE_MINUTE];
+				FullTime.time[RTC_TIMETYPE_SECOND] = oraAllarme.time[RTC_TIMETYPE_SECOND];
+				Chip_RTC_SetFullAlarmTime(&FullTime);
+			}
+			statoDisplay=1;
+		}
+
+
+	} else { //fAlarmTimeMatched==0
+		statoDisplay=1;
+		if (listaTagMancanti != NULL) {
+//			if (lista != listaScheduled) {
+				statoDisplay = 2;
+//			}
+		}
+	}
+
+
 }
 
 
@@ -674,216 +755,140 @@ int vSetupPollTask (void)
     /*******************************************************************************
      * Lets start the polling
      */
-		  lista = inizializza();
-		  Nodo_t *listaPrev;
+    lista = inizializza();
+    listaTagMancanti = inizializza();
+    Nodo_t *listaPrev, *listaTagMancantiPrevious;
 
 
     debug_printf("/****** Begin Polling ******/");
-nCardDetected=0;
-	for(;;)
-	{
 
-		Chip_RTC_GetFullTime(&FullTime);
-		if ((FullTime.time[RTC_TIMETYPE_HOUR] == 0) && (FullTime.time[RTC_TIMETYPE_MINUTE] == 0) && (FullTime.time[RTC_TIMETYPE_SECOND] == 0)){
-			if (ptrMedic != NULL) ptrMedic=NULL;
-			uint8_t counter = 0;
-			ptrMedic = inizializzaListaMed();
-			for(counter = 0; counter < maxR; counter++){
-					if (l_tabellaMedicine[counter][65]==0) { //se più volte al giorno == 0
-						if (l_tabellaMedicine[counter][59]==0) {
+    nCardDetected=0;
+    for(;;)
+    {
 
-							ptrMedic = inserisciInTestaListaMed(ptrMedic, l_tabellaMedicine[counter]);
+//    	tagAggiunto[0]=0,tagAggiunto[1]=0,tagAggiunto[2]=0,tagAggiunto[3]=0;
+//    	tagRimosso[0]=0,tagRimosso[1]=0,tagRimosso[2]=0,tagRimosso[3]=0;
 
-						} else {
-							if (l_tabellaMedicine[counter][58] == 0) { //DA ASSUMERE
+    	Chip_RTC_GetFullTime(&FullTime);
+    	if (((FullTime.time[RTC_TIMETYPE_HOUR] == 0) && (FullTime.time[RTC_TIMETYPE_MINUTE] == 0) && (FullTime.time[RTC_TIMETYPE_SECOND] == 0)) || (setup==1)) {
+    		if (ptrMedic != NULL) ptrMedic=NULL;
 
-								ptrMedic = inserisciInTestaListaMed(ptrMedic, l_tabellaMedicine[counter]);
+    		creaListaMedicinaliDaTabella();
 
-								l_tabellaMedicine[counter][58] ++;
-							} else {
-								l_tabellaMedicine[counter][58] ++;
-								if (l_tabellaMedicine[counter][58] = l_tabellaMedicine[counter][59]) {
-									l_tabellaMedicine[counter][58] = 0;
-								}
+    		ptrMedic = ordinamento_lista_med(ptrMedic);
 
-							}
-						}
-					} else {
-						//conta quante volte prendere la medicina
-						if (l_tabellaMedicine[counter][65]==1) {
-//							//controlla la ripetizione
-//							Chip_RTC_GetFullTime(&FullTime);
-//							IP_RTC_TIME_T dataIn;
-//							dataIn.time[RTC_TIMETYPE_DAYOFMONTH] = l_tabellaMedicine[counter][43];
-//							dataIn.time[RTC_TIMETYPE_MONTH] = l_tabellaMedicine[counter][44];
-//							dataIn.time[RTC_TIMETYPE_YEAR] = (l_tabellaMedicine[counter][45]<<8) | l_tabellaMedicine[counter][46];
-//
-//							int oraInizio = l_tabellaMedicine[counter][51];
-//							int intervalloOre = l_tabellaMedicine[counter][57];
-//							if (FullTime.time[RTC_TIMETYPE_DAYOFMONTH]==dataIn.time[RTC_TIMETYPE_DAYOFMONTH] && FullTime.time[RTC_TIMETYPE_MONTH]==dataIn.time[RTC_TIMETYPE_MONTH] && FullTime.time[RTC_TIMETYPE_YEAR]==dataIn.time[RTC_TIMETYPE_YEAR]) {
-//								//E' il giorno di inizio e lascio l'ora iniziale invariata
-//								oraInizio = oraInizio;
-//							} else {
-//								int stop = 1;
-//								while (stop){
-//									if ((oraInizio-intervalloOre)>=0) {
-//										oraInizio = oraInizio-intervalloOre;
-//									} else {
-//										stop = 0;
-//									}
-//								}
-//							}
-//							int temp = oraInizio;
-//							int contatore = 1;
-//							while ((temp+intervalloOre) < 24) {
-//								temp = temp+intervalloOre;
-//								contatore++;
-//							}
-//							int c = 0;
-//							IP_RTC_TIME_T oraMed;
-//							oraMed.time[RTC_TIMETYPE_HOUR] = oraInizio;
-//							oraMed.time[RTC_TIMETYPE_MINUTE] = l_tabellaMedicine[counter][52];
-//							oraMed.time[RTC_TIMETYPE_SECOND] = l_tabellaMedicine[counter][53];
-//							for (c=0; c<contatore; c++) {
-//								ptrMedic = inserisciInTestaListaMedOra(ptrMedic, l_tabellaMedicine[counter], oraMed);
-//								oraMed.time[RTC_TIMETYPE_HOUR] += intervalloOre;
-//							}
-/////////////////*CODICE OPEN DAY - RIPETIZIONE IN MINUTI*////////////
-							//controlla la ripetizione
-							Chip_RTC_GetFullTime(&FullTime);
-							IP_RTC_TIME_T dataIn;
-							dataIn.time[RTC_TIMETYPE_DAYOFMONTH] = l_tabellaMedicine[counter][43];
-							dataIn.time[RTC_TIMETYPE_MONTH] = l_tabellaMedicine[counter][44];
-							dataIn.time[RTC_TIMETYPE_YEAR] = (l_tabellaMedicine[counter][45]<<8) | l_tabellaMedicine[counter][46];
+    		listaScheduled = inizializza();
+    		nCardTot=0;
 
-							int oraInizio = l_tabellaMedicine[counter][51];
-							int minutiInizio = l_tabellaMedicine[counter][52];
-							int intervalloMinuti = l_tabellaMedicine[counter][57];
-							int ore=0, minuti=0;
-							IP_RTC_TIME_T oraMed;
-							oraMed.time[RTC_TIMETYPE_SECOND] = l_tabellaMedicine[counter][53];
+    		listaMedicinaliProgrammati();
 
-							for (ore=oraInizio; ore<15; ore++) {
-								oraMed.time[RTC_TIMETYPE_HOUR] = ore;
-								for (minuti = minutiInizio; minuti<60; minuti+=3) {
-									oraMed.time[RTC_TIMETYPE_MINUTE] = minuti;
-									ptrMedic = inserisciInTestaListaMedOra(ptrMedic, l_tabellaMedicine[counter],oraMed);
-								}
-							}
+    		setAlarmListaMedicine();
 
-////////////////*FINE CODICE OPEN DAY - RIPETIZIONE IN MINUTI*////////////
+    		setup = 0;
+    	}
 
-						} else {
-							//orari custom
-							int n = l_tabellaMedicine[counter][65];
-							int c = 0;
-							IP_RTC_TIME_T oraMed;
-							oraMed.time[RTC_TIMETYPE_HOUR] = l_tabellaMedicine[counter][51];
-							oraMed.time[RTC_TIMETYPE_MINUTE] = l_tabellaMedicine[counter][52];
-							oraMed.time[RTC_TIMETYPE_SECOND] = l_tabellaMedicine[counter][53];
-							ptrMedic = inserisciInTestaListaMedOra(ptrMedic, l_tabellaMedicine[counter], oraMed);
-							for (c=0; c<n-1; c++) {
-								oraMed.time[RTC_TIMETYPE_HOUR] = l_tabellaMedicine[counter][66+3*c];
-								oraMed.time[RTC_TIMETYPE_MINUTE] = l_tabellaMedicine[counter][67+3*c];
-								oraMed.time[RTC_TIMETYPE_SECOND] = l_tabellaMedicine[counter][68+3*c];
-								ptrMedic = inserisciInTestaListaMedOra(ptrMedic, l_tabellaMedicine[counter], oraMed);
-							}
-						}
-					}
-				}
-			ptrMedic = ordinamento_lista_med(ptrMedic);
-			medicinale *temp1 = ptrMedic;
-			listaScheduled = inizializza();
-			nCardTot=0;
+    	vTaskDelay(80);
 
-			while (temp1->next!=NULL) {
-				if (listaScheduled==NULL) {
-					listaScheduled = inserisciInTesta(listaScheduled,temp1->tag);
-					nCardTot++;
-				} else {
-					Nodo_t *temp2 = listaScheduled;
-					while (temp2->prox!=NULL) {
-						if (confronta_tag(temp1->tag,temp2->info)) {
-							//non inserire
-							break;
-						} else {
-							temp2 = temp2->prox;
-						}
-					}
-					if (!confronta_tag(temp1->tag,temp2->info)) {
-						listaScheduled = inserisciInTesta(listaScheduled,temp1->tag);
-						nCardTot++;
-					}
-				}
-				temp1 = temp1->next;
-			}
+    	//medic.tag;
+    	nCardPrevious=nCardDetected;
+    	listaPrev = inizializza();
+    	listaPrev = lista;
+    	lista = inizializza();
+    	listaTagMancantiPrevious = inizializza();
+    	listaTagMancantiPrevious = listaTagMancanti;
+    	listaTagMancanti = inizializza();
+    	nCardDetected=0;
+    	vCardPresent = 0;
+    	Board_LED_Set( 0, 1 );
+    	/*
+    	 * Detecting Mifare cards works on the Blueboards RC663, MFRC630 and MFRC631.
+    	 * On the Blueboard SLRC610 this if() will just be false.
+    	 */
 
-			if ((ptrMedic->oraA == 0) && (ptrMedic->minA == 0) && (ptrMedic->secA == 0)) {
-				fAlarmTimeMatched = 1;
-			} else {
-			FullTime.time[RTC_TIMETYPE_HOUR]  = ptrMedic->oraA;
-			FullTime.time[RTC_TIMETYPE_MINUTE]  = ptrMedic->minA;
-			FullTime.time[RTC_TIMETYPE_SECOND]  = ptrMedic->secA;
-			Chip_RTC_SetFullAlarmTime(&FullTime);
-			}
-
-		}
-
-vTaskDelay(80);
-
-//medic.tag;
-nCardPrevious=nCardDetected;
-listaPrev = inizializza();
-listaPrev = lista;
-lista = inizializza();
-nCardDetected=0;
-		vCardPresent = 0;
-		Board_LED_Set( 0, 1 );
-		/*
-		 * Detecting Mifare cards works on the Blueboards RC663, MFRC630 and MFRC631.
-		 * On the Blueboard SLRC610 this if() will just be false.
-		 */
-
-		if (DetectMultiMifare(pHal))
-		{
-				Board_LED_Set( 0, 0 );
-//				detect_vCard();
-				/*if (DetectMultiMifare(pHal))
+    	if (DetectMultiMifare(pHal))
+    	{
+    		Board_LED_Set( 0, 0 );
+    		//				detect_vCard();
+    		/*if (DetectMultiMifare(pHal))
 				  						{
 				  									Board_LED_Set( 0, 0 );
 				  									detect_vCard();
 				  						}*/
 
-		  /* reset the IC  */
-		  //PH_CHECK_SUCCESS_FCT(status, phhalHw_Rc663_Cmd_SoftReset(pHal));
-		}
-		else
-			Card_Type[0] = 0x00;
+    		/* reset the IC  */
+    		//PH_CHECK_SUCCESS_FCT(status, phhalHw_Rc663_Cmd_SoftReset(pHal));
+    	}
+    	else
+    		Card_Type[0] = 0x00;
 
-		/*SORT LISTE*/
-		if (lista != NULL)
-			lista = ordinamento_lista(lista);
-		if (listaPrev != NULL)
-			listaPrev = ordinamento_lista(listaPrev);
+    	/*SORT LISTE*/
+    	if (lista != NULL)
+    		lista = ordinamento_lista(lista);
+    	if (listaPrev != NULL)
+    		listaPrev = ordinamento_lista(listaPrev);
 
-		if (nCardDetected<nCardPrevious){
-			/*Capire il tag RIMOSSO*/
-			modifica=1;
-			tag_rimosso(listaPrev, lista);
 
-		} else {
-			if (nCardDetected>nCardPrevious){
-				/*Capire il tag AGGIUNTO*/
-				modifica=1;
-				tag_aggiunto(listaPrev, lista);
-			}
-		}
-		vTaskDelay(10);
-		xSemaphoreGive( xSemaDataAvail );
-		vTaskDelay(10);
-		while( xSemaphoreTake(xSemaGUIend, portMAX_DELAY ) != pdTRUE );
+    	/*CREA LISTA TAG MANCANTI*/
+    	Nodo_t *temp1 = lista;
+    	Nodo_t *temp2 = listaScheduled;
+    	while (temp2!=NULL) {
+    		if(confronta_tag(temp1->info,temp2->info)==1) {
+    			temp1=lista;
+    			temp2=temp2->prox;
+    		} else {
+    			if (temp1->prox!=NULL) {
+    				temp1=temp1->prox;
+    			} else {
+    				//temp2 non è presente nella scatola
+    					listaTagMancanti = inserisciInTesta(listaTagMancanti,temp2->info);
+						temp1=lista;
+						temp2=temp2->prox;
+    			}//FINE else //temp2 non è presente nella scatola
+    		}
+    	}
 
-	}
+    	if (listaTagMancanti != NULL)
+    		listaTagMancanti = ordinamento_lista(listaTagMancanti);
+    	if (listaTagMancantiPrevious != NULL)
+    		listaTagMancantiPrevious = ordinamento_lista(listaTagMancantiPrevious);
+
+    	temp1 = listaTagMancantiPrevious;
+    	temp2 = listaTagMancanti;
+    	while (temp2!=NULL || temp1!=NULL) {
+    		if(confronta_tag(temp1->info,temp2->info)==1) {
+    			temp1=temp1->prox;
+    			temp2=temp2->prox;
+    		} else {
+    			statoDisplayP=-1;
+    			break;
+    		}
+    	}
+
+
+
+    	if (nCardDetected<nCardPrevious){
+    		/*Capire il tag RIMOSSO*/
+    		rimosso=1;
+    		aggiunto=0;
+    		tag_rimosso(listaPrev, lista);
+
+    	} else {
+    		if (nCardDetected>nCardPrevious){
+    			/*Capire il tag AGGIUNTO*/
+    			aggiunto=1;
+    			rimosso=0;
+    			tag_aggiunto(listaPrev, lista);
+    		}
+    	}
+
+    	calcoloStatoDisplay();
+
+    	vTaskDelay(10);
+    	xSemaphoreGive( xSemaDataAvail );
+    	vTaskDelay(10);
+    	while( xSemaphoreTake(xSemaGUIend, portMAX_DELAY ) != pdTRUE );
+
+    } //FINE for(;;)
 }
 
 phKeyStore_Rc663_DataParams_t Rc663keyStore;
